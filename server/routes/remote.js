@@ -86,6 +86,36 @@ router.get('/progress/:jobId', requireAuth, (req, res) => {
   })
 })
 
+// ─── GET /api/remote/status/:jobId ──────────────────────────────────────────
+// Polling endpoint for curl clients. Returns job state + shareUrl when done.
+router.get('/status/:jobId', requireAuth, (req, res) => {
+  const job = getJob(req.params.jobId)
+  if (!job) return res.status(404).json({ error: 'Job not found' })
+
+  const payload = {
+    jobId:      job.id,
+    type:       job.type,
+    status:     job.status,     // pending | downloading | done | error
+    progress:   job.progress,   // 0-100
+    speed:      job.speed,      // bytes/s
+    eta:        job.eta,        // seconds remaining
+    total:      job.total,      // total bytes (0 if unknown)
+    downloaded: job.downloaded,
+    error:      job.error || null,
+  }
+
+  if (job.status === 'done' && job.fileRecord) {
+    const proto = req.headers['x-forwarded-proto'] || req.protocol
+    const host  = req.headers['x-forwarded-host']  || req.get('host')
+    payload.shareUrl  = `${proto}://${host}/share/${job.fileRecord.id}`
+    payload.fileId    = job.fileRecord.id
+    payload.fileName  = job.fileRecord.originalName
+    payload.fileSize  = job.fileRecord.size
+  }
+
+  res.json(payload)
+})
+
 // ─── GET /api/remote/jobs ─────────────────────────────────────────────────────
 // List active jobs (optional, useful for reconnecting)
 router.get('/jobs', (req, res) => {

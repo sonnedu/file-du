@@ -85,6 +85,7 @@ nano .env
 | `SESSION_SECRET` | Session 签名密钥，随机字符串（**必须修改**） | — |
 | `PORT` | 服务监听端口 | `3000` |
 | `MAX_FILE_SIZE` | 单文件最大大小，支持人类可读格式 | `8GB` |
+| `API_TOKEN` | curl/脚本访问的 API 密钥（不填则禁用） | — |
 
 #### `MAX_FILE_SIZE` 支持格式
 
@@ -173,4 +174,103 @@ node server/index.js   # 访问 http://localhost:3000
 - **磁力/BT 下载** 需要 VPS 能访问 DHT 网络（绝大多数 VPS 均可）
 - **Session** 在服务重启后失效，需重新登录管理后台
 - **上传 / 远程下载 API** 均需 Session 认证，防止未授权的 curl 访问
+- 配置 `API_TOKEN` 后，curl 可绕过 Session 直接使用 Token 认证
 - 建议配合 Nginx + HTTPS（Let's Encrypt）使用，保障传输安全
+
+---
+
+## 🤖 curl API 使用（Token 认证）
+
+### 第一步：配置 Token
+
+在 `.env` 中添加：
+```bash
+# 生成随机 Token
+API_TOKEN=$(openssl rand -hex 32)
+echo "API_TOKEN=$API_TOKEN" >> .env
+```
+
+### 第二步：提交下载任务
+
+```bash
+curl -X POST https://your-site.com/api/remote \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/file.zip"}'
+```
+
+**返回：**
+```json
+{ "jobId": "job_1712345678_1", "type": "http" }
+```
+
+### 第三步：轮询下载状态
+
+```bash
+curl "https://your-site.com/api/remote/status/job_1712345678_1" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**下载中：**
+```json
+{
+  "jobId": "job_1712345678_1",
+  "status": "downloading",
+  "progress": 42.5,
+  "speed": 1048576,
+  "eta": 30,
+  "total": 104857600,
+  "downloaded": 44040192
+}
+```
+
+**下载完成：**
+```json
+{
+  "jobId": "job_1712345678_1",
+  "status": "done",
+  "progress": 100,
+  "shareUrl": "https://your-site.com/share/AbCd123456",
+  "fileId": "AbCd123456",
+  "fileName": "file.zip",
+  "fileSize": 104857600
+}
+```
+
+### 一键脚本（等待完成自动输出链接）
+
+```bash
+#!/bin/bash
+SITE="https://your-site.com"
+TOKEN="YOUR_TOKEN"
+URL="$1"   # 用法: ./fetch.sh https://example.com/file.zip
+
+# 提交任务
+JOB_ID=$(curl -s -X POST "$SITE/api/remote" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\": \"$URL\"}" | jq -r '.jobId')
+
+echo "📥 Job started: $JOB_ID"
+
+# 轮询直到完成
+while true; do
+  RESP=$(curl -s "$SITE/api/remote/status/$JOB_ID" \
+    -H "Authorization: Bearer $TOKEN")
+  STATUS=$(echo "$RESP" | jq -r '.status')
+  PROGRESS=$(echo "$RESP" | jq -r '.progress')
+
+  if [ "$STATUS" = "done" ]; then
+    echo "✅ 下载完成！"
+    echo "🔗 $(echo "$RESP" | jq -r '.shareUrl')"
+    break
+  elif [ "$STATUS" = "error" ]; then
+    echo "❌ 下载失败：$(echo "$RESP" | jq -r '.error')"
+    break
+  else
+    echo "⏳ 进度：${PROGRESS}%"
+    sleep 3
+  fi
+done
+```
+
