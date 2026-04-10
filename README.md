@@ -34,7 +34,7 @@
 
 ```bash
 # 1. 将代码上传或克隆到 VPS
-git clone https://github.com/your-username/file-du.git
+git clone https://github.com/sonnedu/file-du.git
 cd file-du
 
 # 2. 执行一键部署（自动安装 Node.js 20、依赖、配置环境、启动服务）
