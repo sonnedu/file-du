@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  file-du:
+    build: .
+    container_name: file-du
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./data:/data
+    environment:
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme123}
+      - SESSION_SECRET=${SESSION_SECRET:-please-change-this-secret-key}
+      - DATA_DIR=/data
+      - PORT=3000
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-8589934592}
+    restart: unless-stopped
+    # Optional: open BT ports for better torrent connectivity
+    # ports:
+    #   - "${PORT:-3000}:3000"
+    #   - "6881:6881"
+    #   - "6881:6881/udp"
