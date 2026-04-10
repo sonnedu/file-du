@@ -68,11 +68,29 @@ if [ "$INSTALL_NODE" = "true" ]; then
   log "Node.js $(node --version) 安装完成"
 fi
 
+# ─── 1b. 确保 npm 已安装 ────────────────────────────────────
+if ! command -v npm &>/dev/null; then
+  warn "npm 未找到，正在安装..."
+  if command -v apt-get &>/dev/null; then
+    sudo apt-get install -y npm 2>/dev/null
+  elif command -v yum &>/dev/null; then
+    sudo yum install -y npm 2>/dev/null
+  elif command -v dnf &>/dev/null; then
+    sudo dnf install -y npm 2>/dev/null
+  else
+    err "无法自动安装 npm，请手动安装：https://nodejs.org"
+  fi
+  log "npm $(npm --version) 安装完成"
+fi
+
+# npm 的完整路径（防止 sudo 丢失 PATH）
+NPM_BIN=$(command -v npm)
+
 # ─── 2. 安装 pm2 ─────────────────────────────────────────────
 info "检查 pm2..."
 if ! command -v pm2 &>/dev/null; then
   info "安装 pm2 进程管理器..."
-  sudo npm install -g pm2 --quiet
+  sudo env "PATH=$PATH" "$NPM_BIN" install -g pm2 --quiet
   log "pm2 安装完成"
 else
   log "pm2 $(pm2 --version) 已存在"
@@ -80,7 +98,7 @@ fi
 
 # ─── 3. 安装项目依赖 ─────────────────────────────────────────
 info "安装项目依赖（可能需要 1-3 分钟，含 WebTorrent 编译）..."
-npm install --omit=dev 2>&1 | grep -v "^npm warn" || true
+"$NPM_BIN" install --omit=dev 2>&1 | grep -v "^npm warn" || true
 log "依赖安装完成"
 
 # ─── 4. 配置 .env ─────────────────────────────────────────────
