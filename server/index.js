@@ -54,6 +54,11 @@ app.use(
   express.static(path.join(__dirname, '../public'), {
     maxAge: '1d',
     etag: true,
+    setHeaders: (res, filePath) => {
+      if (/\.(?:html|js|css)$/.test(filePath)) {
+        res.setHeader('Cache-Control', 'no-cache')
+      }
+    },
   })
 )
 
