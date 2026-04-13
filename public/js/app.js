@@ -165,7 +165,7 @@
         <div class="nav-actions">
           <button class="icon-btn" onclick="toggleTheme()" title="${t('nav.theme')}">${state.theme === 'dark' ? ico.sun : ico.moon}</button>
           <button class="icon-btn lang-btn" onclick="toggleLang()">${state.lang === 'zh' ? 'EN' : '中'}</button>
-          ${state.authenticated ? `<button class="nav-link" onclick="logout()" style="gap:.3rem">${ico.logout} ${t('nav.logout')}</button>` : ''}
+          ${state.authenticated ? `<button class="icon-btn nav-logout-btn" onclick="logout()" title="${t('nav.logout')}">${ico.logout}</button>` : ''}
         </div>
       </div>`
   }
