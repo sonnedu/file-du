@@ -40,8 +40,11 @@
     trash: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
     lock: `<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
     lockSm: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+    eye: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    eyeOff: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
     logout: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
     search: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+    clear: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
     sun: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
     moon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
     alert: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
@@ -225,6 +228,15 @@
     }
   }
 
+  function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId)
+    if (!input) return
+    const isPassword = input.type === 'password'
+    input.type = isPassword ? 'text' : 'password'
+    btn.innerHTML = isPassword ? ico.eyeOff : ico.eye
+    btn.title = isPassword ? t('login.hide_password') : t('login.show_password')
+  }
+
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
     state.authenticated = false
@@ -246,30 +258,29 @@
             <h1 class="page-title">${t('home.list.title')}</h1>
             <p style="color:var(--text-secondary);font-size:.875rem;margin-top:.25rem">${t('home.list.sub')}</p>
           </div>
-          <div class="files-toolbar" style="margin-bottom:0">
-            <div class="search-wrapper">
-              <span class="search-icon">${ico.search}</span>
-              <input type="text" id="pub-search" class="search-input" placeholder="${t('files.search')}"
-                oninput="debouncePublicSearch()">
-            </div>
-            <div class="sort-options">
-              <select id="pub-sort-by" class="select" onchange="loadPublicFiles()">
-                <option value="uploadedAt">${t('files.sort.date')}</option>
-                <option value="size">${t('files.sort.size')}</option>
-                <option value="originalName">${t('files.sort.name')}</option>
-                <option value="downloads">${t('files.sort.downloads')}</option>
-              </select>
-              <select id="pub-sort-dir" class="select" onchange="loadPublicFiles()">
-                <option value="desc">${t('files.sort.desc')}</option>
-                <option value="asc">${t('files.sort.asc')}</option>
-              </select>
-            </div>
-          </div>
         </div>
         <div id="pub-files-container"><div class="loading">${t('common.loading')}</div></div>
       </div>`
 
     loadPublicFiles()
+  }
+
+  function clearInput(inputId, callback) {
+    const input = document.getElementById(inputId)
+    if (input) {
+      input.value = ''
+      input.focus()
+      updateClearBtn(inputId)
+      if (callback) callback()
+    }
+  }
+
+  function updateClearBtn(inputId) {
+    const input = document.getElementById(inputId)
+    const clearBtn = document.getElementById(`${inputId}-clear`)
+    if (input && clearBtn) {
+      clearBtn.style.display = input.value ? 'flex' : 'none'
+    }
   }
 
   let _pubSearchTimer = null
@@ -281,6 +292,7 @@
   async function loadPublicFiles() {
     const el = document.getElementById('pub-files-container')
     if (!el) return
+
     const search = document.getElementById('pub-search')?.value || ''
     const sortBy = document.getElementById('pub-sort-by')?.value || 'uploadedAt'
     const sortDir = document.getElementById('pub-sort-dir')?.value || 'desc'
@@ -291,11 +303,36 @@
       const { files = [] } = await r.json()
 
       if (!files.length) {
-        el.innerHTML = `<div class="empty-state"><div class="empty-icon">${ico.inbox}</div><p>${t('files.empty')}</p></div>`
+        el.innerHTML = `<div class="empty-state">
+          <div class="empty-icon">${ico.inbox}</div>
+          <p>${t('files.empty')}</p>
+          <button class="btn-primary" style="margin-top:1rem" onclick="navigate('/admin')">${ico.uploadSm} ${t('files.empty_action')}</button>
+          <p style="font-size:.8rem;color:var(--text-muted);margin-top:.5rem">${t('files.empty_hint')}</p>
+        </div>`
         return
       }
 
       el.innerHTML = `
+        <div class="files-toolbar" style="margin-bottom:1.25rem">
+          <div class="search-wrapper">
+            <span class="search-icon">${ico.search}</span>
+            <input type="text" id="pub-search" class="search-input" placeholder="${t('files.search')}" value="${esc(search)}"
+              oninput="debouncePublicSearch()">
+            ${search ? `<button class="search-clear" onclick="clearInput('pub-search', debouncePublicSearch)">${ico.clear}</button>` : ''}
+          </div>
+          <div class="sort-options">
+            <select id="pub-sort-by" class="select" onchange="loadPublicFiles()">
+              <option value="uploadedAt" ${sortBy === 'uploadedAt' ? 'selected' : ''}>${t('files.sort.date')}</option>
+              <option value="size" ${sortBy === 'size' ? 'selected' : ''}>${t('files.sort.size')}</option>
+              <option value="originalName" ${sortBy === 'originalName' ? 'selected' : ''}>${t('files.sort.name')}</option>
+              <option value="downloads" ${sortBy === 'downloads' ? 'selected' : ''}>${t('files.sort.downloads')}</option>
+            </select>
+            <select id="pub-sort-dir" class="select" onchange="loadPublicFiles()">
+              <option value="desc" ${sortDir === 'desc' ? 'selected' : ''}>${t('files.sort.desc')}</option>
+              <option value="asc" ${sortDir === 'asc' ? 'selected' : ''}>${t('files.sort.asc')}</option>
+            </select>
+          </div>
+        </div>
         <div class="file-list">
           ${files
             .map(
@@ -346,8 +383,13 @@
               <h2>${t('login.title')}</h2>
               <p>${t('login.sub')}</p>
               <div class="login-form">
-                <input type="password" id="login-pwd" class="input" placeholder="${t('login.placeholder')}"
-                  onkeydown="if(event.key==='Enter')submitLogin()">
+                <div class="password-input-wrapper">
+                  <input type="password" id="login-pwd" class="input" placeholder="${t('login.placeholder')}"
+                    onkeydown="if(event.key==='Enter')submitLogin()">
+                  <button type="button" class="password-toggle" onclick="togglePasswordVisibility('login-pwd', this)" title="${t('login.show_password')}">
+                    ${ico.eye}
+                  </button>
+                </div>
                 <div id="login-error" class="form-error" style="display:none"></div>
                 <button class="btn-primary btn-full" onclick="submitLogin()">${t('login.btn')}</button>
               </div>
@@ -363,7 +405,6 @@
       <div class="container">
         <div class="page-header" style="margin-top:2rem">
           <h1 class="page-title">${t('admin.title')}</h1>
-          <button class="btn-outline" onclick="logout()" style="gap:.4rem">${ico.logout} ${t('nav.logout')}</button>
         </div>
         <div class="card transfer-card">
           <div class="tab-bar">
@@ -727,7 +768,8 @@
           <div class="search-wrapper">
             <span class="search-icon">${ico.search}</span>
             <input type="text" id="file-search" class="search-input" placeholder="${t('files.search')}"
-              oninput="debounceSearch()">
+              oninput="debounceSearch(); updateClearBtn('file-search')">
+            <button class="search-clear" id="file-search-clear" onclick="clearInput('file-search', debounceSearch)" style="display:none">${ico.clear}</button>
           </div>
           <div class="sort-options">
             <label>${t('files.sort.label')}</label>
@@ -759,7 +801,11 @@
       const { files = [] } = await r.json()
 
       if (!files.length) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-icon">${ico.inbox}</div><p>${t('files.empty')}</p></div>`
+        container.innerHTML = `<div class="empty-state">
+          <div class="empty-icon">${ico.inbox}</div>
+          <p>${t('files.empty')}</p>
+          <button class="btn-primary" style="margin-top:1rem" onclick="switchAdminTab('upload')">${ico.uploadSm} ${t('files.empty_action')}</button>
+        </div>`
         return
       }
 
@@ -958,6 +1004,9 @@
     navigate,
     toggleTheme,
     toggleLang,
+    togglePasswordVisibility,
+    clearInput,
+    updateClearBtn,
     logout,
     submitLogin,
     switchAdminTab,
