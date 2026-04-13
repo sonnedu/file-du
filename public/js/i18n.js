@@ -18,10 +18,10 @@ const translations = {
       },
       tabs: {
         upload: '上传文件',
-        remote: '远程下载',
+        remote: '远程/磁力',
       },
       upload: {
-        drag: '点击选择或拖拽文件到此处',
+        drag: '拖拽文件到此处，或点击选择',
         hint: '支持任意格式 · 单文件最大 8GB',
         select: '选择文件',
       },
@@ -44,8 +44,6 @@ const translations = {
       title: '文件管理',
       search: '搜索文件名...',
       empty: '暂无文件，快去上传吧！',
-      empty_action: '去上传',
-      empty_hint: '需要先登录管理后台才能上传文件',
       count: '个文件',
       downloads: '次下载',
       sort: {
@@ -54,8 +52,8 @@ const translations = {
         size: '文件大小',
         name: '文件名',
         downloads: '下载次数',
-        desc: '最新优先',
-        asc: '最早优先',
+        desc: '降序',
+        asc: '升序',
       },
       source: {
         upload: '直传',
@@ -74,8 +72,6 @@ const translations = {
       placeholder: '输入管理密码',
       btn: '验证',
       error: '密码错误，请重试',
-      show_password: '显示密码',
-      hide_password: '隐藏密码',
     },
     share: {
       not_found: '文件不存在',
@@ -147,10 +143,10 @@ const translations = {
       },
       tabs: {
         upload: 'Upload',
-        remote: 'Remote',
+        remote: 'Remote / Magnet',
       },
       upload: {
-        drag: 'Click to select or drag files here',
+        drag: 'Drag files here, or click to select',
         hint: 'Any format · Max 8GB per file',
         select: 'Choose Files',
       },
@@ -173,8 +169,6 @@ const translations = {
       title: 'File Manager',
       search: 'Search files...',
       empty: 'No files yet. Upload something!',
-      empty_action: 'Upload',
-      empty_hint: 'Login to the admin panel to upload files',
       count: 'files',
       downloads: 'downloads',
       sort: {
@@ -183,8 +177,8 @@ const translations = {
         size: 'Size',
         name: 'Name',
         downloads: 'Downloads',
-        desc: 'Newest',
-        asc: 'Oldest',
+        desc: 'Desc',
+        asc: 'Asc',
       },
       source: {
         upload: 'Upload',
@@ -203,8 +197,6 @@ const translations = {
       placeholder: 'Enter admin password',
       btn: 'Sign In',
       error: 'Incorrect password, please try again',
-      show_password: 'Show password',
-      hide_password: 'Hide password',
     },
     share: {
       not_found: 'File Not Found',
