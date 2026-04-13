@@ -1,26 +1,56 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFile, writeFile, access } from 'fs/promises'
+import { existsSync, mkdirSync } from 'fs'
 import path from 'path'
+import lockfile from 'proper-lockfile'
 
 const DATA_DIR = process.env.DATA_DIR || './data'
 const DB_PATH = path.join(DATA_DIR, 'db.json')
 
+if (!existsSync(DATA_DIR)) {
+  mkdirSync(DATA_DIR, { recursive: true })
+}
+
 const defaults = () => ({ files: [] })
 
-function readDb() {
+async function fileExists(filePath) {
   try {
-    if (!existsSync(DB_PATH)) return defaults()
-    return JSON.parse(readFileSync(DB_PATH, 'utf-8'))
+    await access(filePath)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function withLock(fn) {
+  if (!(await fileExists(DB_PATH))) {
+    await writeFile(DB_PATH, JSON.stringify(defaults()), 'utf-8')
+  }
+  return lockfile.lock(DB_PATH).then(async release => {
+    try {
+      const result = await fn()
+      return result
+    } finally {
+      await release()
+    }
+  })
+}
+
+async function readDb() {
+  try {
+    if (!(await fileExists(DB_PATH))) return defaults()
+    const content = await readFile(DB_PATH, 'utf-8')
+    return JSON.parse(content)
   } catch {
     return defaults()
   }
 }
 
-function writeDb(data) {
-  writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8')
+async function writeDb(data) {
+  await writeFile(DB_PATH, JSON.stringify(data, null, 2), 'utf-8')
 }
 
-export function getFiles({ search = '', sortBy = 'uploadedAt', sortDir = 'desc' } = {}) {
-  const db = readDb()
+export async function getFiles({ search = '', sortBy = 'uploadedAt', sortDir = 'desc' } = {}) {
+  const db = await readDb()
   let files = [...db.files]
 
   if (search) {
@@ -38,45 +68,54 @@ export function getFiles({ search = '', sortBy = 'uploadedAt', sortDir = 'desc' 
   return files
 }
 
-export function getFile(id) {
-  return readDb().files.find(f => f.id === id) || null
+export async function getFile(id) {
+  const db = await readDb()
+  return db.files.find(f => f.id === id) || null
 }
 
-export function getTotalSize() {
-  const db = readDb()
+export async function getTotalSize() {
+  const db = await readDb()
   return db.files.reduce((acc, f) => acc + (f.size || 0), 0)
 }
 
-export function addFile(file) {
-  const db = readDb()
-  db.files.push(file)
-  writeDb(db)
-  return file
+export async function addFile(file) {
+  return withLock(async () => {
+    const db = await readDb()
+    db.files.push(file)
+    await writeDb(db)
+    return file
+  })
 }
 
-export function updateFile(id, updates) {
-  const db = readDb()
-  const idx = db.files.findIndex(f => f.id === id)
-  if (idx === -1) return null
-  db.files[idx] = { ...db.files[idx], ...updates }
-  writeDb(db)
-  return db.files[idx]
+export async function updateFile(id, updates) {
+  return withLock(async () => {
+    const db = await readDb()
+    const idx = db.files.findIndex(f => f.id === id)
+    if (idx === -1) return null
+    db.files[idx] = { ...db.files[idx], ...updates }
+    await writeDb(db)
+    return db.files[idx]
+  })
 }
 
-export function deleteFile(id) {
-  const db = readDb()
-  const idx = db.files.findIndex(f => f.id === id)
-  if (idx === -1) return false
-  db.files.splice(idx, 1)
-  writeDb(db)
-  return true
+export async function deleteFile(id) {
+  return withLock(async () => {
+    const db = await readDb()
+    const idx = db.files.findIndex(f => f.id === id)
+    if (idx === -1) return false
+    db.files.splice(idx, 1)
+    await writeDb(db)
+    return true
+  })
 }
 
-export function incrementDownloads(id) {
-  const db = readDb()
-  const file = db.files.find(f => f.id === id)
-  if (file) {
-    file.downloads = (file.downloads || 0) + 1
-    writeDb(db)
-  }
+export async function incrementDownloads(id) {
+  return withLock(async () => {
+    const db = await readDb()
+    const file = db.files.find(f => f.id === id)
+    if (file) {
+      file.downloads = (file.downloads || 0) + 1
+      await writeDb(db)
+    }
+  })
 }

@@ -13,7 +13,7 @@ function extractToken(req) {
  */
 function isValidToken(token) {
   const apiToken = process.env.API_TOKEN
-  if (!apiToken) return false           // token auth disabled if not configured
+  if (!apiToken) return false // token auth disabled if not configured
   return token === apiToken
 }
 
@@ -37,4 +37,3 @@ export function requireTokenAuth(req, res, next) {
   if (token && isValidToken(token)) return next()
   return res.status(401).json({ error: 'Unauthorized: valid API_TOKEN required' })
 }
-

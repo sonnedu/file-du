@@ -5,7 +5,11 @@ if (!process.env.SESSION_SECRET) {
   process.exit(1)
 }
 
-if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'changeme123' || process.env.ADMIN_PASSWORD === 'admin123') {
+if (
+  !process.env.ADMIN_PASSWORD ||
+  process.env.ADMIN_PASSWORD === 'changeme123' ||
+  process.env.ADMIN_PASSWORD === 'admin123'
+) {
   console.error('❌ FATAL: ADMIN_PASSWORD must be changed from default!')
   console.error('   Set a strong password in your .env file or environment.')
   process.exit(1)

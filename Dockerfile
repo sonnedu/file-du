@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies first (better layer caching)
 COPY package*.json ./
 RUN npm install --omit=dev
 
@@ -18,6 +18,9 @@ COPY . .
 
 # Create data directories
 RUN mkdir -p /data/uploads /data/temp
+
+# Set production environment
+ENV NODE_ENV=production
 
 # Expose port
 EXPOSE 3000

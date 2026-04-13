@@ -1,18 +1,20 @@
-/**
- * In-memory download job manager with SSE client tracking.
- * Jobs survive browser disconnects - download continues on server.
- */
-
 const jobs = new Map()
 let _counter = 0
 
+const DOWNLOAD_TIMEOUT_MS = parseInt(process.env.DOWNLOAD_TIMEOUT_MS || '') || 2 * 60 * 60 * 1000
+const MAX_CONCURRENT_DOWNLOADS = parseInt(process.env.MAX_CONCURRENT_DOWNLOADS || '') || 10
+
 export function createJob(type, url) {
+  if (getActiveJobCount() >= MAX_CONCURRENT_DOWNLOADS) {
+    return null
+  }
+
   const id = `job_${Date.now()}_${++_counter}`
   const job = {
     id,
-    type,  // 'http' | 'magnet' | 'torrent'
+    type,
     url,
-    status: 'pending',  // pending | downloading | done | error
+    status: 'pending',
     progress: 0,
     speed: 0,
     eta: 0,
@@ -21,6 +23,8 @@ export function createJob(type, url) {
     error: null,
     fileRecord: null,
     clients: new Set(),
+    createdAt: Date.now(),
+    abortController: new AbortController(),
   }
   jobs.set(id, job)
   return job
@@ -35,6 +39,28 @@ export function updateJob(id, updates) {
   if (!job) return
   Object.assign(job, updates)
   broadcastJob(job)
+}
+
+export function cancelJob(id) {
+  const job = jobs.get(id)
+  if (!job) return false
+  if (job.status !== 'pending' && job.status !== 'downloading') return false
+
+  job.abortController?.abort()
+  job.status = 'error'
+  job.error = 'Cancelled by user'
+  broadcastJob(job)
+  return true
+}
+
+export function getActiveJobCount() {
+  let count = 0
+  for (const job of jobs.values()) {
+    if (job.status === 'pending' || job.status === 'downloading') {
+      count++
+    }
+  }
+  return count
 }
 
 function broadcastJob(job) {
@@ -61,7 +87,6 @@ export function addClient(jobId, res) {
   const job = jobs.get(jobId)
   if (!job) return false
   job.clients.add(res)
-  // Send current state immediately
   const payload = JSON.stringify({
     status: job.status,
     progress: job.progress,
@@ -81,14 +106,21 @@ export function removeClient(jobId, res) {
   if (job) job.clients.delete(res)
 }
 
-// Clean up completed/errored jobs after 1 hour
 setInterval(() => {
-  const cutoff = Date.now() - 60 * 60 * 1000
+  const now = Date.now()
   for (const [id, job] of jobs) {
+    if (job.status === 'downloading' && now - job.createdAt > DOWNLOAD_TIMEOUT_MS) {
+      job.abortController?.abort()
+      job.status = 'error'
+      job.error = 'Download timeout exceeded'
+      broadcastJob(job)
+    }
+
     if ((job.status === 'done' || job.status === 'error') && job.clients.size === 0) {
-      // Check if job was created more than 1 hour ago (approximated by ID)
       const ts = parseInt(id.split('_')[1])
-      if (ts < cutoff) jobs.delete(id)
+      if (ts < now - 60 * 60 * 1000) {
+        jobs.delete(id)
+      }
     }
   }
-}, 10 * 60 * 1000)
+}, 60 * 1000)

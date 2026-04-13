@@ -1,7 +1,6 @@
 import { Router } from 'express'
 import { createWriteStream } from 'fs'
 import { rename, rm, mkdir, stat } from 'fs/promises'
-import { existsSync } from 'fs'
 import https from 'https'
 import http from 'http'
 import path from 'path'
@@ -9,8 +8,16 @@ import mimeTypes from 'mime-types'
 import { nanoid } from 'nanoid'
 import { UPLOADS_DIR, TEMP_DIR } from '../lib/storage.js'
 import { addFile, getTotalSize } from '../lib/db.js'
-import { createJob, getJob, updateJob, addClient, removeClient } from '../lib/downloadManager.js'
+import {
+  createJob,
+  getJob,
+  updateJob,
+  addClient,
+  removeClient,
+  cancelJob,
+} from '../lib/downloadManager.js'
 import { requireAuth } from '../middleware/auth.js'
+import { validateBody, remoteUrlSchema } from '../middleware/validate.js'
 import { parseSize } from '../lib/parseSize.js'
 import dns from 'dns'
 import ipaddr from 'ipaddr.js'
@@ -22,10 +29,12 @@ function safeLookup(hostname, options, callback) {
       const ip = ipaddr.parse(address)
       const range = ip.range()
       if (range !== 'unicast' && range !== 'ipv4Mapped') {
-        return callback(new Error(`SSRF Prevention: IP ${address} is in a restricted range (${range})`))
+        return callback(
+          new Error(`SSRF Prevention: IP ${address} is in a restricted range (${range})`)
+        )
       }
       callback(null, address, family)
-    } catch (e) {
+    } catch {
       callback(new Error('Invalid IP address resolved'))
     }
   })
@@ -33,7 +42,6 @@ function safeLookup(hostname, options, callback) {
 
 const safeHttpAgent = new http.Agent({ lookup: safeLookup })
 const safeHttpsAgent = new https.Agent({ lookup: safeLookup })
-
 
 const router = Router()
 
@@ -52,9 +60,8 @@ try {
 
 // ─── POST /api/remote ─────────────────────────────────────────────────────────
 // Submit a download job. Returns jobId immediately, download runs in background.
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, validateBody(remoteUrlSchema), async (req, res) => {
   const { url } = req.body
-  if (!url?.trim()) return res.status(400).json({ error: 'URL is required' })
 
   const trimmedUrl = url.trim()
   const isMagnet = trimmedUrl.startsWith('magnet:')
@@ -62,19 +69,31 @@ router.post('/', requireAuth, async (req, res) => {
   const type = isMagnet ? 'magnet' : isTorrent ? 'torrent' : 'http'
 
   if ((type === 'magnet' || type === 'torrent') && !wtClient) {
-    return res.status(501).json({ error: 'Magnet/BT support not available (WebTorrent failed to load)' })
+    return res
+      .status(501)
+      .json({ error: 'Magnet/BT support not available (WebTorrent failed to load)' })
   }
 
   const job = createJob(type, trimmedUrl)
 
+  if (!job) {
+    return res.status(429).json({ error: 'Too many concurrent downloads. Please try again later.' })
+  }
+
   // Start download in background (non-blocking)
   if (type === 'magnet') {
-    downloadTorrent(job, trimmedUrl).catch(err => updateJob(job.id, { status: 'error', error: err.message }))
+    downloadTorrent(job, trimmedUrl).catch(err =>
+      updateJob(job.id, { status: 'error', error: err.message })
+    )
   } else if (type === 'torrent') {
     // First fetch the .torrent file, then pass to webtorrent
-    downloadTorrentFromUrl(job, trimmedUrl).catch(err => updateJob(job.id, { status: 'error', error: err.message }))
+    downloadTorrentFromUrl(job, trimmedUrl).catch(err =>
+      updateJob(job.id, { status: 'error', error: err.message })
+    )
   } else {
-    downloadHttp(job, trimmedUrl).catch(err => updateJob(job.id, { status: 'error', error: err.message }))
+    downloadHttp(job, trimmedUrl).catch(err =>
+      updateJob(job.id, { status: 'error', error: err.message })
+    )
   }
 
   res.json({ jobId: job.id, type })
@@ -88,7 +107,7 @@ router.get('/progress/:jobId', requireAuth, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream')
   res.setHeader('Cache-Control', 'no-cache, no-transform')
   res.setHeader('Connection', 'keep-alive')
-  res.setHeader('X-Accel-Buffering', 'no')  // nginx: disable buffering
+  res.setHeader('X-Accel-Buffering', 'no') // nginx: disable buffering
   res.flushHeaders()
 
   // Keep-alive comment every 20s to prevent proxy timeout
@@ -115,27 +134,36 @@ router.get('/status/:jobId', requireAuth, (req, res) => {
   if (!job) return res.status(404).json({ error: 'Job not found' })
 
   const payload = {
-    jobId:      job.id,
-    type:       job.type,
-    status:     job.status,     // pending | downloading | done | error
-    progress:   job.progress,   // 0-100
-    speed:      job.speed,      // bytes/s
-    eta:        job.eta,        // seconds remaining
-    total:      job.total,      // total bytes (0 if unknown)
+    jobId: job.id,
+    type: job.type,
+    status: job.status, // pending | downloading | done | error
+    progress: job.progress, // 0-100
+    speed: job.speed, // bytes/s
+    eta: job.eta, // seconds remaining
+    total: job.total, // total bytes (0 if unknown)
     downloaded: job.downloaded,
-    error:      job.error || null,
+    error: job.error || null,
   }
 
   if (job.status === 'done' && job.fileRecord) {
     const proto = req.headers['x-forwarded-proto'] || req.protocol
-    const host  = req.headers['x-forwarded-host']  || req.get('host')
-    payload.shareUrl  = `${proto}://${host}/share/${job.fileRecord.id}`
-    payload.fileId    = job.fileRecord.id
-    payload.fileName  = job.fileRecord.originalName
-    payload.fileSize  = job.fileRecord.size
+    const host = req.headers['x-forwarded-host'] || req.get('host')
+    payload.shareUrl = `${proto}://${host}/share/${job.fileRecord.id}`
+    payload.fileId = job.fileRecord.id
+    payload.fileName = job.fileRecord.originalName
+    payload.fileSize = job.fileRecord.size
   }
 
   res.json(payload)
+})
+
+// ─── POST /api/remote/cancel/:jobId ─────────────────────────────────────────
+router.post('/cancel/:jobId', requireAuth, (req, res) => {
+  const success = cancelJob(req.params.jobId)
+  if (!success) {
+    return res.status(400).json({ error: 'Job not found or already completed' })
+  }
+  res.json({ success: true })
 })
 
 // ─── GET /api/remote/jobs ─────────────────────────────────────────────────────
@@ -161,90 +189,100 @@ async function downloadHttp(job, url, maxRedirects = 5) {
     const protocol = parsedUrl.protocol === 'https:' ? https : http
     const agent = parsedUrl.protocol === 'https:' ? safeHttpsAgent : safeHttpAgent
 
-    const request = protocol.get(url, { agent, headers: { 'User-Agent': 'file-du/1.0' } }, async (response) => {
-      // Handle redirects
-      if ([301, 302, 303, 307, 308].includes(response.statusCode) && response.headers.location) {
-        request.destroy()
-        const redirectUrl = new URL(response.headers.location, url).href
-        return downloadHttp(job, redirectUrl, maxRedirects - 1).then(resolve).catch(reject)
-      }
-
-      if (response.statusCode !== 200) {
-        return reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`))
-      }
-
-      const id = nanoid(10)
-      // Try to get filename from Content-Disposition or URL
-      let originalName = getFilenameFromHeaders(response.headers) || path.basename(parsedUrl.pathname) || `download_${id}`
-      if (!originalName || originalName === '/') originalName = `download_${id}`
-
-      const ext = path.extname(originalName)
-      const storedName = `${id}${ext}`
-      const destPath = path.join(UPLOADS_DIR, storedName)
-
-      const total = parseInt(response.headers['content-length'] || '0', 10)
-      
-      const MAX_TOTAL_SIZE = parseSize(process.env.MAX_TOTAL_SIZE || '50GB')
-      if (getTotalSize() + total > MAX_TOTAL_SIZE) {
-        request.destroy(new Error('Storage quota exceeded (MAX_TOTAL_SIZE limit)'))
-        return reject(new Error('Storage quota exceeded'))
-      }
-
-      let downloaded = 0
-      let lastTime = Date.now()
-      let lastBytes = 0
-
-      updateJob(job.id, { total, downloaded: 0 })
-
-      const writer = createWriteStream(destPath)
-
-      response.on('data', chunk => {
-        downloaded += chunk.length
-        const now = Date.now()
-        const elapsed = (now - lastTime) / 1000
-        if (elapsed >= 0.5) {
-          const speed = (downloaded - lastBytes) / elapsed
-          const remaining = total > 0 ? (total - downloaded) / Math.max(speed, 1) : 0
-          updateJob(job.id, {
-            downloaded,
-            progress: total > 0 ? (downloaded / total) * 100 : 0,
-            speed: Math.round(speed),
-            eta: Math.round(remaining),
-          })
-          lastTime = now
-          lastBytes = downloaded
+    const request = protocol.get(
+      url,
+      { agent, headers: { 'User-Agent': 'file-du/1.0' } },
+      async response => {
+        // Handle redirects
+        if ([301, 302, 303, 307, 308].includes(response.statusCode) && response.headers.location) {
+          request.destroy()
+          const redirectUrl = new URL(response.headers.location, url).href
+          return downloadHttp(job, redirectUrl, maxRedirects - 1)
+            .then(resolve)
+            .catch(reject)
         }
-      })
 
-      response.pipe(writer)
+        if (response.statusCode !== 200) {
+          return reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`))
+        }
 
-      writer.on('finish', async () => {
-        try {
-          const fileStat = await stat(destPath)
-          const record = {
-            id,
-            originalName,
-            storedName,
-            size: fileStat.size,
-            mimeType: response.headers['content-type']?.split(';')[0].trim()
-              || mimeTypes.lookup(originalName)
-              || 'application/octet-stream',
-            source: 'remote',
-            sourceUrl: url,
-            uploadedAt: new Date().toISOString(),
-            downloads: 0,
+        const id = nanoid(10)
+        // Try to get filename from Content-Disposition or URL
+        let originalName =
+          getFilenameFromHeaders(response.headers) ||
+          path.basename(parsedUrl.pathname) ||
+          `download_${id}`
+        if (!originalName || originalName === '/') originalName = `download_${id}`
+
+        const ext = path.extname(originalName)
+        const storedName = `${id}${ext}`
+        const destPath = path.join(UPLOADS_DIR, storedName)
+
+        const total = parseInt(response.headers['content-length'] || '0', 10)
+
+        const MAX_TOTAL_SIZE = parseSize(process.env.MAX_TOTAL_SIZE || '50GB')
+        if ((await getTotalSize()) + total > MAX_TOTAL_SIZE) {
+          request.destroy(new Error('Storage quota exceeded (MAX_TOTAL_SIZE limit)'))
+          return reject(new Error('Storage quota exceeded'))
+        }
+
+        let downloaded = 0
+        let lastTime = Date.now()
+        let lastBytes = 0
+
+        updateJob(job.id, { total, downloaded: 0 })
+
+        const writer = createWriteStream(destPath)
+
+        response.on('data', chunk => {
+          downloaded += chunk.length
+          const now = Date.now()
+          const elapsed = (now - lastTime) / 1000
+          if (elapsed >= 0.5) {
+            const speed = (downloaded - lastBytes) / elapsed
+            const remaining = total > 0 ? (total - downloaded) / Math.max(speed, 1) : 0
+            updateJob(job.id, {
+              downloaded,
+              progress: total > 0 ? (downloaded / total) * 100 : 0,
+              speed: Math.round(speed),
+              eta: Math.round(remaining),
+            })
+            lastTime = now
+            lastBytes = downloaded
           }
-          addFile(record)
-          updateJob(job.id, { status: 'done', progress: 100, fileRecord: record })
-          resolve()
-        } catch (err) {
-          reject(err)
-        }
-      })
+        })
 
-      writer.on('error', reject)
-      response.on('error', reject)
-    })
+        response.pipe(writer)
+
+        writer.on('finish', async () => {
+          try {
+            const fileStat = await stat(destPath)
+            const record = {
+              id,
+              originalName,
+              storedName,
+              size: fileStat.size,
+              mimeType:
+                response.headers['content-type']?.split(';')[0].trim() ||
+                mimeTypes.lookup(originalName) ||
+                'application/octet-stream',
+              source: 'remote',
+              sourceUrl: url,
+              uploadedAt: new Date().toISOString(),
+              downloads: 0,
+            }
+            await addFile(record)
+            updateJob(job.id, { status: 'done', progress: 100, fileRecord: record })
+            resolve()
+          } catch (err) {
+            reject(err)
+          }
+        })
+
+        writer.on('error', reject)
+        response.on('error', reject)
+      }
+    )
 
     request.on('error', reject)
     request.setTimeout(30000, () => {
@@ -276,12 +314,14 @@ async function downloadToFile(url, destPath) {
     const protocol = parsedUrl.protocol === 'https:' ? https : http
     const agent = parsedUrl.protocol === 'https:' ? safeHttpsAgent : safeHttpAgent
     const writer = createWriteStream(destPath)
-    protocol.get(url, { agent, headers: { 'User-Agent': 'file-du/1.0' } }, response => {
-      response.pipe(writer)
-      writer.on('finish', resolve)
-      writer.on('error', reject)
-      response.on('error', reject)
-    }).on('error', reject)
+    protocol
+      .get(url, { agent, headers: { 'User-Agent': 'file-du/1.0' } }, response => {
+        response.pipe(writer)
+        writer.on('finish', resolve)
+        writer.on('error', reject)
+        response.on('error', reject)
+      })
+      .on('error', reject)
   })
 }
 
@@ -297,9 +337,9 @@ async function downloadTorrent(job, magnetOrPath, isTempFile = false) {
   await mkdir(torrentDir, { recursive: true })
 
   return new Promise((resolve, reject) => {
-    wtClient.add(magnetOrPath, { path: torrentDir }, torrent => {
+    wtClient.add(magnetOrPath, { path: torrentDir }, async torrent => {
       const MAX_TOTAL_SIZE = parseSize(process.env.MAX_TOTAL_SIZE || '50GB')
-      if (getTotalSize() + torrent.length > MAX_TOTAL_SIZE) {
+      if ((await getTotalSize()) + torrent.length > MAX_TOTAL_SIZE) {
         torrent.destroy()
         return reject(new Error('Storage quota exceeded (MAX_TOTAL_SIZE limit)'))
       }
@@ -345,16 +385,24 @@ async function downloadTorrent(job, magnetOrPath, isTempFile = false) {
               uploadedAt: new Date().toISOString(),
               downloads: 0,
             }
-            addFile(record)
+            await addFile(record)
             results.push(record)
           }
 
           // Cleanup
           torrent.destroy()
           if (isTempFile) {
-            try { await rm(magnetOrPath) } catch {}
+            try {
+              await rm(magnetOrPath)
+            } catch {
+              // Ignore cleanup errors - temp file may already be removed
+            }
           }
-          try { await rm(torrentDir, { recursive: true, force: true }) } catch {}
+          try {
+            await rm(torrentDir, { recursive: true, force: true })
+          } catch {
+            // Ignore cleanup errors - directory may already be removed or in use
+          }
 
           updateJob(job.id, {
             status: 'done',

@@ -3,11 +3,9 @@ import { getFiles } from '../lib/db.js'
 
 const router = Router()
 
-// Public file list (no auth required)
-// Only exposes safe fields, omits storedName
-router.get('/files', (req, res) => {
+router.get('/files', async (req, res) => {
   const { search = '', sortBy = 'uploadedAt', sortDir = 'desc' } = req.query
-  const files = getFiles({ search, sortBy, sortDir }).map(f => ({
+  const files = (await getFiles({ search, sortBy, sortDir })).map(f => ({
     id: f.id,
     originalName: f.originalName,
     size: f.size,

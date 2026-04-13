@@ -9,15 +9,13 @@ import { addFile, getTotalSize } from '../lib/db.js'
 import { requireAuth } from '../middleware/auth.js'
 import { parseSize } from '../lib/parseSize.js'
 
-
-
 const router = Router()
 const MAX_FILE_SIZE = parseSize(process.env.MAX_FILE_SIZE || '8GB')
 
 router.post('/', requireAuth, async (req, res) => {
   const MAX_TOTAL_SIZE = parseSize(process.env.MAX_TOTAL_SIZE || '50GB')
   const incomingSize = parseInt(req.headers['content-length'] || '0', 10)
-  if (getTotalSize() + incomingSize > MAX_TOTAL_SIZE) {
+  if ((await getTotalSize()) + incomingSize > MAX_TOTAL_SIZE) {
     return res.status(413).json({ error: 'Storage quota exceeded (MAX_TOTAL_SIZE limit)' })
   }
 
@@ -55,7 +53,7 @@ router.post('/', requireAuth, async (req, res) => {
         uploadedAt: new Date().toISOString(),
         downloads: 0,
       }
-      addFile(record)
+      await addFile(record)
       results.push(record)
     }
 

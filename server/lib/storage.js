@@ -1,4 +1,5 @@
-import { mkdirSync, existsSync, unlinkSync } from 'fs'
+import { unlink, access } from 'fs/promises'
+import { existsSync, mkdirSync } from 'fs'
 import path from 'path'
 
 const DATA_DIR = process.env.DATA_DIR || './data'
@@ -16,11 +17,13 @@ export function getFilePath(storedName) {
   return path.join(UPLOADS_DIR, storedName)
 }
 
-export function deleteStoredFile(storedName) {
+export async function deleteStoredFile(storedName) {
   const filePath = getFilePath(storedName)
-  if (existsSync(filePath)) {
-    unlinkSync(filePath)
+  try {
+    await access(filePath)
+    await unlink(filePath)
     return true
+  } catch {
+    return false
   }
-  return false
 }

@@ -32,7 +32,7 @@ router.post('/logout', (req, res) => {
 })
 
 router.get('/status', (req, res) => {
-  res.json({ authenticated: !!(req.session?.authenticated) })
+  res.json({ authenticated: !!req.session?.authenticated })
 })
 
 export default router

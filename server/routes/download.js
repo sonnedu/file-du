@@ -1,23 +1,29 @@
 import { Router } from 'express'
-import { createReadStream, statSync, existsSync } from 'fs'
+import { createReadStream } from 'fs'
+import { stat, access } from 'fs/promises'
 import mimeTypes from 'mime-types'
 import { getFile, incrementDownloads } from '../lib/db.js'
 import { getFilePath } from '../lib/storage.js'
 
 const router = Router()
 
-router.get('/:id', (req, res) => {
-  const file = getFile(req.params.id)
+router.get('/:id', async (req, res) => {
+  const file = await getFile(req.params.id)
   if (!file) return res.status(404).json({ error: 'File not found' })
 
   const filePath = getFilePath(file.storedName)
-  if (!existsSync(filePath)) return res.status(404).json({ error: 'File missing on disk' })
+  try {
+    await access(filePath)
+  } catch {
+    return res.status(404).json({ error: 'File missing on disk' })
+  }
 
-  incrementDownloads(req.params.id)
+  incrementDownloads(req.params.id).catch(() => {})
 
-  const stat = statSync(filePath)
-  const fileSize = stat.size
-  const contentType = file.mimeType || mimeTypes.lookup(file.storedName) || 'application/octet-stream'
+  const fileStat = await stat(filePath)
+  const fileSize = fileStat.size
+  const contentType =
+    file.mimeType || mimeTypes.lookup(file.storedName) || 'application/octet-stream'
   const disposition = `attachment; filename*=UTF-8''${encodeURIComponent(file.originalName)}`
   const range = req.headers.range
 

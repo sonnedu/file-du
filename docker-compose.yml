@@ -5,15 +5,17 @@ services:
     build: .
     container_name: file-du
     ports:
-      - "${PORT:-3000}:3000"
+      - '${PORT:-3000}:3000'
     volumes:
       - ./data:/data
     environment:
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme123}
-      - SESSION_SECRET=${SESSION_SECRET:-please-change-this-secret-key}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - SESSION_SECRET=${SESSION_SECRET}
       - DATA_DIR=/data
       - PORT=3000
-      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-8589934592}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-8GB}
+      - MAX_TOTAL_SIZE=${MAX_TOTAL_SIZE:-50GB}
+      - NODE_ENV=production
     restart: unless-stopped
     # Optional: open BT ports for better torrent connectivity
     # ports:

@@ -4,9 +4,26 @@
   "description": "Lightweight file transfer platform with HTTP/Magnet/BT support",
   "type": "module",
   "main": "server/index.js",
+  "license": "MIT",
+  "author": "sonnedu",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sonnedu/file-du.git"
+  },
+  "keywords": [
+    "file-transfer",
+    "file-sharing",
+    "magnet",
+    "torrent",
+    "webtorrent"
+  ],
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node --watch server/index.js"
+    "dev": "node --watch server/index.js",
+    "lint": "eslint server public",
+    "lint:fix": "eslint server public --fix",
+    "format": "prettier --write \"server/**/*.js\" \"public/**/*.js\"",
+    "format:check": "prettier --check \"server/**/*.js\" \"public/**/*.js\""
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -16,7 +33,17 @@
     "ipaddr.js": "^2.3.0",
     "mime-types": "^2.1.35",
     "nanoid": "^5.0.7",
-    "webtorrent": "^2.4.2"
+    "pino": "^10.3.1",
+    "pino-pretty": "^13.1.3",
+    "proper-lockfile": "^4.1.2",
+    "webtorrent": "^2.8.5",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
+    "globals": "^16.5.0",
+    "prettier": "^3.8.2"
   },
   "engines": {
     "node": ">=18.0.0"

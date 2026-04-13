@@ -18,11 +18,11 @@
 
 ## 📐 页面结构
 
-| 路径 | 访问权限 | 说明 |
-|------|---------|------|
-| `/` | 🌐 公开 | 文件下载列表（搜索、排序、下载） |
-| `/admin` | 🔐 需要登录 | 管理后台：上传文件 / 远程下载 / 文件管理 |
-| `/share/:id` | 🌐 公开 | 单文件分享页（显示文件信息 + 下载按钮） |
+| 路径         | 访问权限    | 说明                                     |
+| ------------ | ----------- | ---------------------------------------- |
+| `/`          | 🌐 公开     | 文件下载列表（搜索、排序、下载）         |
+| `/admin`     | 🔐 需要登录 | 管理后台：上传文件 / 远程下载 / 文件管理 |
+| `/share/:id` | 🌐 公开     | 单文件分享页（显示文件信息 + 下载按钮）  |
 
 ---
 
@@ -42,6 +42,7 @@ chmod +x deploy.sh && bash deploy.sh
 ```
 
 脚本会自动完成：
+
 - ✅ 检测并安装 Node.js 20（若未安装，支持 Ubuntu / Debian / CentOS）
 - ✅ 安装项目依赖（含 WebTorrent 编译）
 - ✅ 交互式设置管理密码和端口
@@ -79,13 +80,18 @@ cp .env.example .env
 nano .env
 ```
 
-| 变量 | 描述 | 默认值 |
-|------|------|--------|
-| `ADMIN_PASSWORD` | 管理后台登录密码（**必须修改**） | `changeme123` |
-| `SESSION_SECRET` | Session 签名密钥，随机字符串（**必须修改**） | — |
-| `PORT` | 服务监听端口 | `3000` |
-| `MAX_FILE_SIZE` | 单文件最大大小，支持人类可读格式 | `8GB` |
-| `API_TOKEN` | curl/脚本访问的 API 密钥（不填则禁用） | — |
+| 变量                       | 描述                                            | 默认值             |
+| -------------------------- | ----------------------------------------------- | ------------------ |
+| `ADMIN_PASSWORD`           | 管理后台登录密码（**必须修改**）                | `changeme123`      |
+| `SESSION_SECRET`           | Session 签名密钥，随机字符串（**必须修改**）    | —                  |
+| `PORT`                     | 服务监听端口                                    | `3000`             |
+| `MAX_FILE_SIZE`            | 单文件最大大小，支持人类可读格式                | `8GB`              |
+| `MAX_TOTAL_SIZE`           | 系统总容量上限                                  | `50GB`             |
+| `API_TOKEN`                | curl/脚本访问的 API 密钥（不填则禁用）          | —                  |
+| `DOWNLOAD_TIMEOUT_MS`      | 远程下载超时时间（毫秒）                        | `7200000`（2小时） |
+| `MAX_CONCURRENT_DOWNLOADS` | 最大并发下载数                                  | `10`               |
+| `LOG_LEVEL`                | 日志级别：`trace`/`debug`/`info`/`warn`/`error` | `info`             |
+| `NODE_ENV`                 | 运行环境，生产环境设为 `production`             | —                  |
 
 #### `MAX_FILE_SIZE` 支持格式
 
@@ -151,11 +157,11 @@ server {
 
 所有持久化数据存储在 `./data/`：
 
-| 路径 | 内容 |
-|------|------|
-| `./data/db.json` | 文件元数据数据库 |
+| 路径              | 内容                  |
+| ----------------- | --------------------- |
+| `./data/db.json`  | 文件元数据数据库      |
 | `./data/uploads/` | 上传 / 远程下载的文件 |
-| `./data/temp/` | BT 下载临时目录 |
+| `./data/temp/`    | BT 下载临时目录       |
 
 ---
 
@@ -165,6 +171,14 @@ server {
 npm install
 cp .env.example .env   # 按需修改
 node server/index.js   # 访问 http://localhost:3000
+
+# 开发模式（自动重启）
+npm run dev
+
+# 代码检查
+npm run lint           # 检查问题
+npm run lint:fix       # 自动修复
+npm run format         # 格式化代码
 ```
 
 ---
@@ -184,6 +198,7 @@ node server/index.js   # 访问 http://localhost:3000
 ### 第一步：配置 Token
 
 在 `.env` 中添加：
+
 ```bash
 # 生成随机 Token
 API_TOKEN=$(openssl rand -hex 32)
@@ -200,6 +215,7 @@ curl -X POST https://your-site.com/api/remote \
 ```
 
 **返回：**
+
 ```json
 { "jobId": "job_1712345678_1", "type": "http" }
 ```
@@ -212,6 +228,7 @@ curl "https://your-site.com/api/remote/status/job_1712345678_1" \
 ```
 
 **下载中：**
+
 ```json
 {
   "jobId": "job_1712345678_1",
@@ -225,6 +242,7 @@ curl "https://your-site.com/api/remote/status/job_1712345678_1" \
 ```
 
 **下载完成：**
+
 ```json
 {
   "jobId": "job_1712345678_1",
@@ -273,4 +291,3 @@ while true; do
   fi
 done
 ```
-

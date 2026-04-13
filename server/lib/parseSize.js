@@ -22,7 +22,17 @@ export function parseSize(value) {
   const num = parseFloat(match[1])
   const unit = (match[2] || 'B').toUpperCase()
 
-  const units = { B: 1, K: 1024, KB: 1024, M: 1024 ** 2, MB: 1024 ** 2, G: 1024 ** 3, GB: 1024 ** 3, T: 1024 ** 4, TB: 1024 ** 4 }
+  const units = {
+    B: 1,
+    K: 1024,
+    KB: 1024,
+    M: 1024 ** 2,
+    MB: 1024 ** 2,
+    G: 1024 ** 3,
+    GB: 1024 ** 3,
+    T: 1024 ** 4,
+    TB: 1024 ** 4,
+  }
   const multiplier = units[unit]
 
   if (!multiplier) throw new Error(`Unknown size unit "${unit}" in MAX_FILE_SIZE="${value}"`)

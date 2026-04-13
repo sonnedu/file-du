@@ -20,11 +20,11 @@
     authenticated: false,
     activeUploads: [],
     activeDownloads: [],
-    adminTab: 'upload',  // 'upload' | 'remote' | 'files'
+    adminTab: 'upload', // 'upload' | 'remote' | 'files'
   }
 
   // ─── i18n ───────────────────────────────────────────────────────────────────
-  const t = key => window.i18n ? window.i18n.t(key, state.lang) : key
+  const t = key => (window.i18n ? window.i18n.t(key, state.lang) : key)
 
   // ─── SVG Icons ───────────────────────────────────────────────────────────────
   const ico = {
@@ -58,15 +58,23 @@
 
   // ─── Utilities ───────────────────────────────────────────────────────────────
   function esc(str) {
-    return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
   }
   function fmtSize(bytes) {
     if (!bytes || bytes === 0) return '0 B'
-    const k = 1024, s = ['B', 'KB', 'MB', 'GB', 'TB']
+    const k = 1024,
+      s = ['B', 'KB', 'MB', 'GB', 'TB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + s[i]
   }
-  function fmtSpeed(bps) { return fmtSize(bps) + '/s' }
+  function fmtSpeed(bps) {
+    return fmtSize(bps) + '/s'
+  }
   function fmtEta(s) {
     if (!s || s <= 0) return ''
     if (s < 60) return `${s}s`
@@ -78,14 +86,20 @@
   }
   function fmtRelDate(iso) {
     const diff = Date.now() - new Date(iso).getTime()
-    const m = Math.floor(diff / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24)
+    const m = Math.floor(diff / 60000),
+      h = Math.floor(m / 60),
+      d = Math.floor(h / 24)
     if (state.lang === 'zh') {
-      if (m < 1) return '刚刚'; if (m < 60) return `${m}分钟前`
-      if (h < 24) return `${h}小时前`; if (d < 30) return `${d}天前`
+      if (m < 1) return '刚刚'
+      if (m < 60) return `${m}分钟前`
+      if (h < 24) return `${h}小时前`
+      if (d < 30) return `${d}天前`
       return fmtDate(iso)
     } else {
-      if (m < 1) return 'just now'; if (m < 60) return `${m}m ago`
-      if (h < 24) return `${h}h ago`; if (d < 30) return `${d}d ago`
+      if (m < 1) return 'just now'
+      if (m < 60) return `${m}m ago`
+      if (h < 24) return `${h}h ago`
+      if (d < 30) return `${d}d ago`
       return fmtDate(iso)
     }
   }
@@ -100,9 +114,14 @@
     return ico.fileGeneric
   }
   async function copyText(text) {
-    try { await navigator.clipboard.writeText(text) } catch {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
       const el = Object.assign(document.createElement('textarea'), { value: text })
-      document.body.appendChild(el); el.select(); document.execCommand('copy'); el.remove()
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      el.remove()
     }
     showToast(t('toast.copied'), 'success', 2000)
   }
@@ -115,12 +134,15 @@
   function toggleTheme() {
     state.theme = state.theme === 'dark' ? 'light' : 'dark'
     localStorage.setItem(THEME_KEY, state.theme)
-    applyTheme(); renderNav()
+    applyTheme()
+    renderNav()
   }
   function toggleLang() {
     state.lang = state.lang === 'zh' ? 'en' : 'zh'
     localStorage.setItem(LANG_KEY, state.lang)
-    applyTheme(); renderNav(); route()
+    applyTheme()
+    renderNav()
+    route()
   }
 
   // ─── Navbar ──────────────────────────────────────────────────────────────────
@@ -146,7 +168,10 @@
   }
 
   // ─── Router ──────────────────────────────────────────────────────────────────
-  function navigate(path) { history.pushState({}, '', path); route() }
+  function navigate(path) {
+    history.pushState({}, '', path)
+    route()
+  }
 
   function route() {
     const p = location.pathname
@@ -162,7 +187,9 @@
       const r = await fetch('/api/auth/status')
       const d = await r.json()
       state.authenticated = !!d.authenticated
-    } catch { state.authenticated = false }
+    } catch {
+      state.authenticated = false
+    }
   }
 
   async function submitLogin() {
@@ -171,7 +198,8 @@
     if (!pwd) return
     try {
       const r = await fetch('/api/auth/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: pwd }),
       })
       if (r.ok) {
@@ -179,12 +207,21 @@
         renderNav()
         renderAdminPage()
       } else {
-        if (errEl) { errEl.textContent = t('login.error'); errEl.style.display = 'block' }
+        if (errEl) {
+          errEl.textContent = t('login.error')
+          errEl.style.display = 'block'
+        }
         const card = document.querySelector('.login-card')
-        if (card) { card.classList.add('shake'); setTimeout(() => card.classList.remove('shake'), 400) }
+        if (card) {
+          card.classList.add('shake')
+          setTimeout(() => card.classList.remove('shake'), 400)
+        }
       }
     } catch (err) {
-      if (errEl) { errEl.textContent = err.message; errEl.style.display = 'block' }
+      if (errEl) {
+        errEl.textContent = err.message
+        errEl.style.display = 'block'
+      }
     }
   }
 
@@ -260,7 +297,9 @@
 
       el.innerHTML = `
         <div class="file-list">
-          ${files.map(f => `
+          ${files
+            .map(
+              f => `
             <div class="file-item">
               <div class="file-icon">${fileIcon(f.mimeType)}</div>
               <div class="file-info">
@@ -278,7 +317,9 @@
                   ${ico.downloadSm} ${t('share.download_btn')}
                 </a>
               </div>
-            </div>`).join('')}
+            </div>`
+            )
+            .join('')}
         </div>
         <div class="files-footer">${files.length} ${t('files.count')}</div>`
     } catch (err) {
@@ -326,13 +367,13 @@
         </div>
         <div class="card transfer-card">
           <div class="tab-bar">
-            <button class="tab${state.adminTab==='upload'?' active':''}" id="atab-upload" onclick="switchAdminTab('upload')">
+            <button class="tab${state.adminTab === 'upload' ? ' active' : ''}" id="atab-upload" onclick="switchAdminTab('upload')">
               ${ico.uploadSm} ${t('home.tabs.upload')}
             </button>
-            <button class="tab${state.adminTab==='remote'?' active':''}" id="atab-remote" onclick="switchAdminTab('remote')">
+            <button class="tab${state.adminTab === 'remote' ? ' active' : ''}" id="atab-remote" onclick="switchAdminTab('remote')">
               ${ico.remote} ${t('home.tabs.remote')}
             </button>
-            <button class="tab${state.adminTab==='files'?' active':''}" id="atab-files" onclick="switchAdminTab('files')">
+            <button class="tab${state.adminTab === 'files' ? ' active' : ''}" id="atab-files" onclick="switchAdminTab('files')">
               ${ico.files} ${t('admin.tabs.files')}
             </button>
           </div>
@@ -347,7 +388,8 @@
   function renderAdminTabContent() {
     if (state.adminTab === 'upload') return `<div class="tab-content">${uploadZoneHTML()}</div>`
     if (state.adminTab === 'remote') return `<div class="tab-content">${remoteFormHTML()}</div>`
-    if (state.adminTab === 'files') return `<div class="tab-content files-tab-pane"><div id="files-container"><div class="loading">${t('common.loading')}</div></div></div>`
+    if (state.adminTab === 'files')
+      return `<div class="tab-content files-tab-pane"><div id="files-container"><div class="loading">${t('common.loading')}</div></div></div>`
     return ''
   }
 
@@ -384,11 +426,19 @@
     const zone = document.getElementById('upload-zone')
     const input = document.getElementById('file-input')
     if (!zone || !input) return
-    zone.addEventListener('click', e => { if (!e.target.closest('button')) input.click() })
-    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over') })
-    zone.addEventListener('dragleave', e => { if (!zone.contains(e.relatedTarget)) zone.classList.remove('drag-over') })
+    zone.addEventListener('click', e => {
+      if (!e.target.closest('button')) input.click()
+    })
+    zone.addEventListener('dragover', e => {
+      e.preventDefault()
+      zone.classList.add('drag-over')
+    })
+    zone.addEventListener('dragleave', e => {
+      if (!zone.contains(e.relatedTarget)) zone.classList.remove('drag-over')
+    })
     zone.addEventListener('drop', e => {
-      e.preventDefault(); zone.classList.remove('drag-over')
+      e.preventDefault()
+      zone.classList.remove('drag-over')
       const files = Array.from(e.dataTransfer.files)
       if (files.length) uploadFiles(files)
     })
@@ -399,28 +449,51 @@
     })
   }
 
-  function uploadFiles(files) { files.forEach(uploadFile) }
+  function uploadFiles(files) {
+    files.forEach(uploadFile)
+  }
 
   function uploadFile(file) {
     const id = `up_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
-    const tx = { id, name: file.name, size: file.size, type: 'upload', progress: 0, speed: 0, done: false, error: null, fileRecord: null, _lastLoaded: 0, _lastTime: Date.now() }
+    const tx = {
+      id,
+      name: file.name,
+      size: file.size,
+      type: 'upload',
+      progress: 0,
+      speed: 0,
+      done: false,
+      error: null,
+      fileRecord: null,
+      _lastLoaded: 0,
+      _lastTime: Date.now(),
+    }
     state.activeUploads.push(tx)
     renderTransfers()
 
-    const fd = new FormData(); fd.append('file', file)
-    const xhr = new XMLHttpRequest(); xhr.open('POST', '/api/upload')
+    const fd = new FormData()
+    fd.append('file', file)
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', '/api/upload')
 
     xhr.upload.addEventListener('progress', e => {
       if (!e.lengthComputable) return
-      const now = Date.now(), elapsed = (now - tx._lastTime) / 1000
-      if (elapsed >= 0.3) { tx.speed = (e.loaded - tx._lastLoaded) / elapsed; tx._lastLoaded = e.loaded; tx._lastTime = now }
-      tx.progress = (e.loaded / e.total) * 100; renderTransfers()
+      const now = Date.now(),
+        elapsed = (now - tx._lastTime) / 1000
+      if (elapsed >= 0.3) {
+        tx.speed = (e.loaded - tx._lastLoaded) / elapsed
+        tx._lastLoaded = e.loaded
+        tx._lastTime = now
+      }
+      tx.progress = (e.loaded / e.total) * 100
+      renderTransfers()
     })
 
     xhr.addEventListener('load', () => {
       if (xhr.status === 200) {
         const res = JSON.parse(xhr.responseText)
-        tx.done = true; tx.progress = 100
+        tx.done = true
+        tx.progress = 100
         if (res.files?.[0]) tx.fileRecord = res.files[0]
         showToast(t('toast.upload_success'), 'success')
       } else {
@@ -430,7 +503,11 @@
       renderTransfers()
     })
 
-    xhr.addEventListener('error', () => { tx.error = t('toast.upload_error'); showToast(tx.error, 'error'); renderTransfers() })
+    xhr.addEventListener('error', () => {
+      tx.error = t('toast.upload_error')
+      showToast(tx.error, 'error')
+      renderTransfers()
+    })
     xhr.send(fd)
   }
 
@@ -456,24 +533,48 @@
     const badge = document.getElementById('url-badge')
     if (!badge) return
     if (url.startsWith('magnet:')) {
-      badge.className = 'url-type-badge type-magnet'; badge.textContent = 'Magnet'
+      badge.className = 'url-type-badge type-magnet'
+      badge.textContent = 'Magnet'
     } else if (/\.torrent(\?|$)/i.test(url) && url.startsWith('http')) {
-      badge.className = 'url-type-badge type-torrent'; badge.textContent = 'Torrent'
+      badge.className = 'url-type-badge type-torrent'
+      badge.textContent = 'Torrent'
     } else if (url.startsWith('http://') || url.startsWith('https://')) {
-      badge.className = 'url-type-badge type-http'; badge.textContent = 'HTTP'
+      badge.className = 'url-type-badge type-http'
+      badge.textContent = 'HTTP'
     } else {
-      badge.className = 'url-type-badge'; badge.textContent = 'URL'
+      badge.className = 'url-type-badge'
+      badge.textContent = 'URL'
     }
   }
 
   async function startRemoteDownload() {
     const urlInput = document.getElementById('remote-url')
     const url = urlInput?.value?.trim()
-    if (!url) { showToast(t('toast.url_required'), 'warning'); return }
+    if (!url) {
+      showToast(t('toast.url_required'), 'warning')
+      return
+    }
 
-    const type = url.startsWith('magnet:') ? 'magnet' : /\.torrent(\?|$)/i.test(url) ? 'torrent' : 'http'
+    const type = url.startsWith('magnet:')
+      ? 'magnet'
+      : /\.torrent(\?|$)/i.test(url)
+        ? 'torrent'
+        : 'http'
     const id = `dl_${Date.now()}`
-    const tx = { id, jobId: null, url, name: url.length > 55 ? url.slice(0, 52) + '...' : url, type, progress: 0, speed: 0, eta: 0, total: 0, done: false, error: null, fileRecord: null }
+    const tx = {
+      id,
+      jobId: null,
+      url,
+      name: url.length > 55 ? url.slice(0, 52) + '...' : url,
+      type,
+      progress: 0,
+      speed: 0,
+      eta: 0,
+      total: 0,
+      done: false,
+      error: null,
+      fileRecord: null,
+    }
     state.activeDownloads.push(tx)
     renderTransfers()
     if (urlInput) urlInput.value = ''
@@ -481,30 +582,53 @@
 
     try {
       const r = await fetch('/api/remote', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       })
-      if (!r.ok) { const e = await r.json().catch(() => ({ error: 'Failed' })); throw new Error(e.error || 'Failed') }
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({ error: 'Failed' }))
+        throw new Error(e.error || 'Failed')
+      }
       const { jobId } = await r.json()
       tx.jobId = jobId
 
       const es = new EventSource(`/api/remote/progress/${jobId}`)
       es.onmessage = e => {
         const d = JSON.parse(e.data)
-        Object.assign(tx, { progress: d.progress || 0, speed: d.speed || 0, eta: d.eta || 0, total: d.total || 0 })
+        Object.assign(tx, {
+          progress: d.progress || 0,
+          speed: d.speed || 0,
+          eta: d.eta || 0,
+          total: d.total || 0,
+        })
         if (d.status === 'done') {
-          tx.done = true; tx.progress = 100
+          tx.done = true
+          tx.progress = 100
           if (d.fileRecord) tx.fileRecord = d.fileRecord
-          es.close(); showToast(t('toast.download_success'), 'success')
+          es.close()
+          showToast(t('toast.download_success'), 'success')
         }
-        if (d.status === 'error') { tx.error = d.error || t('toast.download_error'); es.close(); showToast(tx.error, 'error') }
+        if (d.status === 'error') {
+          tx.error = d.error || t('toast.download_error')
+          es.close()
+          showToast(tx.error, 'error')
+        }
         renderTransfers()
       }
       es.onerror = () => {
-        if (!tx.done && !tx.error) { tx.error = t('toast.connection_error'); showToast(tx.error, 'error'); renderTransfers() }
+        if (!tx.done && !tx.error) {
+          tx.error = t('toast.connection_error')
+          showToast(tx.error, 'error')
+          renderTransfers()
+        }
         es.close()
       }
-    } catch (err) { tx.error = err.message; showToast(err.message, 'error'); renderTransfers() }
+    } catch (err) {
+      tx.error = err.message
+      showToast(err.message, 'error')
+      renderTransfers()
+    }
   }
 
   // ─── Transfer Cards ───────────────────────────────────────────────────────────
@@ -512,30 +636,43 @@
     const el = document.getElementById('active-transfers')
     if (!el) return
     const all = [...state.activeUploads, ...state.activeDownloads]
-    if (!all.length) { el.innerHTML = ''; return }
+    if (!all.length) {
+      el.innerHTML = ''
+      return
+    }
 
-    const typeLabel = { upload: t('transfer.type.upload'), http: 'HTTP', magnet: 'Magnet', torrent: 'BT' }
+    const typeLabel = {
+      upload: t('transfer.type.upload'),
+      http: 'HTTP',
+      magnet: 'Magnet',
+      torrent: 'BT',
+    }
 
     el.innerHTML = `
       <p class="section-title" style="margin-top:2rem">${t('home.transfers.title')}</p>
       <div class="transfers-list">
-        ${all.map(tx => {
-          let body = ''
-          if (tx.error) {
-            body = `<div class="tx-error">${ico.alert} ${esc(tx.error)}</div>`
-          } else if (tx.done) {
-            const shareUrl = tx.fileRecord ? `${location.origin}/share/${tx.fileRecord.id}` : null
-            body = `<div class="tx-done">
+        ${all
+          .map(tx => {
+            let body = ''
+            if (tx.error) {
+              body = `<div class="tx-error">${ico.alert} ${esc(tx.error)}</div>`
+            } else if (tx.done) {
+              const shareUrl = tx.fileRecord ? `${location.origin}/share/${tx.fileRecord.id}` : null
+              body = `<div class="tx-done">
               <span class="badge badge-success">✓ ${t('transfer.done')}</span>
-              ${shareUrl ? `<div class="share-link-row">
+              ${
+                shareUrl
+                  ? `<div class="share-link-row">
                 <input type="text" readonly value="${esc(shareUrl)}" class="share-link-input">
                 <button class="btn-sm btn-outline" onclick="copyText('${esc(shareUrl)}')">${t('common.copy')}</button>
                 <a href="${esc(shareUrl)}" target="_blank" class="btn-sm btn-outline">↗</a>
-              </div>` : ''}
+              </div>`
+                  : ''
+              }
             </div>`
-          } else {
-            const pct = tx.progress ? `${tx.progress.toFixed(1)}%` : '...'
-            body = `<div class="progress-wrapper">
+            } else {
+              const pct = tx.progress ? `${tx.progress.toFixed(1)}%` : '...'
+              body = `<div class="progress-wrapper">
               <div class="progress-bar"><div class="progress-fill" style="width:${tx.progress}%"></div></div>
               <div class="progress-stats">
                 <span>${pct}</span>
@@ -544,19 +681,20 @@
                 ${tx.total > 0 ? `<span>${fmtSize(tx.total)}</span>` : ''}
               </div>
             </div>`
-          }
-          return `<div class="tx-card${tx.done ? ' done' : ''}${tx.error ? ' error' : ''}">
+            }
+            return `<div class="tx-card${tx.done ? ' done' : ''}${tx.error ? ' error' : ''}">
             <div class="tx-header">
               <div class="tx-info">
                 <span class="tx-type-badge">${typeLabel[tx.type] || tx.type}</span>
                 <span class="tx-name" title="${esc(tx.name)}">${esc(tx.name)}</span>
                 ${tx.size ? `<span class="tx-size">${fmtSize(tx.size)}</span>` : ''}
               </div>
-              ${(tx.done || tx.error) ? `<button class="close-btn" onclick="removeTx('${tx.id}')" title="${t('common.close')}">×</button>` : ''}
+              ${tx.done || tx.error ? `<button class="close-btn" onclick="removeTx('${tx.id}')" title="${t('common.close')}">×</button>` : ''}
             </div>
             ${body}
           </div>`
-        }).join('')}
+          })
+          .join('')}
       </div>`
   }
 
@@ -568,7 +706,10 @@
 
   // ─── File Manager Tab ────────────────────────────────────────────────────────
   let _searchTimer = null
-  function debounceSearch() { clearTimeout(_searchTimer); _searchTimer = setTimeout(loadFileList, 280) }
+  function debounceSearch() {
+    clearTimeout(_searchTimer)
+    _searchTimer = setTimeout(loadFileList, 280)
+  }
 
   async function loadFileList() {
     const el = document.getElementById('files-container')
@@ -610,7 +751,11 @@
 
     try {
       const r = await fetch(`/api/files?${params}`)
-      if (r.status === 401) { state.authenticated = false; renderAdminPage(); return }
+      if (r.status === 401) {
+        state.authenticated = false
+        renderAdminPage()
+        return
+      }
       const { files = [] } = await r.json()
 
       if (!files.length) {
@@ -618,11 +763,17 @@
         return
       }
 
-      const sourceLabel = { upload: t('files.source.upload'), remote: t('files.source.remote'), torrent: t('files.source.torrent') }
+      const sourceLabel = {
+        upload: t('files.source.upload'),
+        remote: t('files.source.remote'),
+        torrent: t('files.source.torrent'),
+      }
 
       container.innerHTML = `
         <div class="file-list">
-          ${files.map(f => `
+          ${files
+            .map(
+              f => `
             <div class="file-item">
               <div class="file-icon">${fileIcon(f.mimeType)}</div>
               <div class="file-info">
@@ -642,7 +793,9 @@
                 <button class="btn-sm btn-danger" title="${t('files.actions.delete')}"
                   onclick="deleteFile('${f.id}')">${ico.trash}</button>
               </div>
-            </div>`).join('')}
+            </div>`
+            )
+            .join('')}
         </div>
         <div class="files-footer">${files.length} ${t('files.count')}</div>`
     } catch (err) {
@@ -659,11 +812,17 @@
         const name = document.getElementById('rename-input')?.value?.trim()
         if (!name) return
         const r = await fetch(`/api/files/${id}`, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ originalName: name }),
         })
-        if (r.ok) { showToast(t('toast.rename_success'), 'success'); loadFileList() }
-        else { const d = await r.json(); showToast(d.error || 'Error', 'error') }
+        if (r.ok) {
+          showToast(t('toast.rename_success'), 'success')
+          loadFileList()
+        } else {
+          const d = await r.json()
+          showToast(d.error || 'Error', 'error')
+        }
       },
     })
   }
@@ -676,8 +835,13 @@
       confirmClass: 'btn-danger',
       onConfirm: async () => {
         const r = await fetch(`/api/files/${id}`, { method: 'DELETE' })
-        if (r.ok) { showToast(t('toast.delete_success'), 'success'); loadFileList() }
-        else { const d = await r.json(); showToast(d.error || 'Error', 'error') }
+        if (r.ok) {
+          showToast(t('toast.delete_success'), 'success')
+          loadFileList()
+        } else {
+          const d = await r.json()
+          showToast(d.error || 'Error', 'error')
+        }
       },
     })
   }
@@ -705,7 +869,11 @@
 
       const f = await r.json()
       document.title = `${f.originalName} — File-Du`
-      const srcLabel = { upload: t('files.source.upload'), remote: t('files.source.remote'), torrent: t('files.source.torrent') }
+      const srcLabel = {
+        upload: t('files.source.upload'),
+        remote: t('files.source.remote'),
+        torrent: t('files.source.torrent'),
+      }
 
       content.innerHTML = `<div class="share-container container">
         <div class="card share-card">
@@ -744,11 +912,25 @@
         <button class="${confirmClass || 'btn-primary'}" onclick="confirmModal()">${confirmText || t('common.confirm')}</button>
       </div>`
     document.getElementById('modal-overlay').classList.remove('hidden')
-    setTimeout(() => { const inp = document.querySelector('#modal input'); if (inp) { inp.focus(); inp.select() } }, 80)
+    setTimeout(() => {
+      const inp = document.querySelector('#modal input')
+      if (inp) {
+        inp.focus()
+        inp.select()
+      }
+    }, 80)
   }
 
-  function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); _onConfirm = null }
-  async function confirmModal() { if (_onConfirm) { await _onConfirm(); closeModal() } }
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.add('hidden')
+    _onConfirm = null
+  }
+  async function confirmModal() {
+    if (_onConfirm) {
+      await _onConfirm()
+      closeModal()
+    }
+  }
 
   // ─── Toast ───────────────────────────────────────────────────────────────────
   function showToast(message, type = 'info', duration = 3500) {
@@ -756,8 +938,9 @@
     const id = `t_${Date.now()}`
     const icons = { success: '✓', error: '✗', warning: '⚠', info: 'i' }
     const el = document.createElement('div')
-    el.className = `toast toast-${type}`; el.id = id
-    el.innerHTML = `<span class="toast-icon">${icons[type]||'i'}</span><span class="toast-message">${esc(message)}</span><button class="toast-close" onclick="removeToast('${id}')">×</button>`
+    el.className = `toast toast-${type}`
+    el.id = id
+    el.innerHTML = `<span class="toast-icon">${icons[type] || 'i'}</span><span class="toast-message">${esc(message)}</span><button class="toast-close" onclick="removeToast('${id}')">×</button>`
     c.appendChild(el)
     setTimeout(() => el.classList.add('toast-show'), 10)
     setTimeout(() => removeToast(id), duration)
@@ -772,12 +955,25 @@
 
   // ─── Global Exposure ─────────────────────────────────────────────────────────
   Object.assign(window, {
-    navigate, toggleTheme, toggleLang, logout, submitLogin,
-    switchAdminTab, detectUrlType, startRemoteDownload,
-    loadPublicFiles, debouncePublicSearch,
-    loadFileList, debounceSearch, renameFile, deleteFile,
-    copyText, removeTx, removeToast,
-    closeModal, confirmModal,
+    navigate,
+    toggleTheme,
+    toggleLang,
+    logout,
+    submitLogin,
+    switchAdminTab,
+    detectUrlType,
+    startRemoteDownload,
+    loadPublicFiles,
+    debouncePublicSearch,
+    loadFileList,
+    debounceSearch,
+    renameFile,
+    deleteFile,
+    copyText,
+    removeTx,
+    removeToast,
+    closeModal,
+    confirmModal,
   })
 
   // ─── Bootstrap ───────────────────────────────────────────────────────────────
@@ -791,6 +987,8 @@
     document.getElementById('modal-overlay').addEventListener('click', e => {
       if (e.target.id === 'modal-overlay') closeModal()
     })
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal() })
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeModal()
+    })
   })
 })()
