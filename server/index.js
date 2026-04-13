@@ -30,6 +30,9 @@ ensureDirectories()
 const app = express()
 const PORT = parseInt(process.env.PORT || '3000', 10)
 
+// Trust reverse proxy (nginx, cloudflare, etc.)
+app.set('trust proxy', true)
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
