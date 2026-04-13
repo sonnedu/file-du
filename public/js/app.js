@@ -40,6 +40,8 @@
     trash: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
     lock: `<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
     lockSm: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+    menu: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`,
+    close: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
     eye: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
     eyeOff: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
     logout: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
@@ -167,7 +169,48 @@
           <button class="icon-btn lang-btn" onclick="toggleLang()">${state.lang === 'zh' ? 'EN' : '中'}</button>
           ${state.authenticated ? `<button class="icon-btn nav-logout-btn" onclick="logout()" title="${t('nav.logout')}">${ico.logout}</button>` : ''}
         </div>
+        <button class="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Menu">
+          ${ico.menu}
+        </button>
+      </div>
+      <div class="mobile-menu" id="mobile-menu">
+        <div class="mobile-menu-header">
+          <span class="mobile-menu-title">File-Du</span>
+          <button class="icon-btn" onclick="toggleMobileMenu()">${ico.close}</button>
+        </div>
+        <div class="mobile-menu-content">
+          <a href="/" class="mobile-menu-item${cur === '/' ? ' active' : ''}" onclick="event.preventDefault();navigate('/');toggleMobileMenu()">
+            ${t('nav.home')}
+          </a>
+          <a href="/admin" class="mobile-menu-item${cur === '/admin' ? ' active' : ''}" onclick="event.preventDefault();navigate('/admin');toggleMobileMenu()">
+            ${ico.lockSm} ${t('nav.admin')}
+          </a>
+          ${
+            state.authenticated
+              ? `<button class="mobile-menu-item" onclick="logout();toggleMobileMenu()">
+            ${ico.logout} ${t('nav.logout')}
+          </button>`
+              : ''
+          }
+          <div class="mobile-menu-divider"></div>
+          <div class="mobile-menu-actions">
+            <button class="mobile-menu-action" onclick="toggleTheme()">
+              ${state.theme === 'dark' ? ico.sun : ico.moon} ${t('nav.theme')}
+            </button>
+            <button class="mobile-menu-action" onclick="toggleLang()">
+              ${state.lang === 'zh' ? 'EN' : '中'}
+            </button>
+          </div>
+        </div>
       </div>`
+  }
+
+  function toggleMobileMenu() {
+    const menu = document.getElementById('mobile-menu')
+    if (menu) {
+      menu.classList.toggle('open')
+      document.body.classList.toggle('mobile-menu-open')
+    }
   }
 
   // ─── Router ──────────────────────────────────────────────────────────────────
@@ -1005,6 +1048,7 @@
     toggleTheme,
     toggleLang,
     togglePasswordVisibility,
+    toggleMobileMenu,
     clearInput,
     updateClearBtn,
     logout,
