@@ -224,7 +224,6 @@ a:hover {
   font-family: inherit;
   white-space: nowrap;
   flex-shrink: 0;
-  min-width: max-content;
 }
 
 .nav-link:hover,
@@ -1562,7 +1561,7 @@ body.mobile-menu-open {
 /* ═══════════════════════════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .nav-container {
     padding: 0 1rem;
   }
