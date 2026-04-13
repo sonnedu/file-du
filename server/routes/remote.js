@@ -8,9 +8,31 @@ import path from 'path'
 import mimeTypes from 'mime-types'
 import { nanoid } from 'nanoid'
 import { UPLOADS_DIR, TEMP_DIR } from '../lib/storage.js'
-import { addFile } from '../lib/db.js'
+import { addFile, getTotalSize } from '../lib/db.js'
 import { createJob, getJob, updateJob, addClient, removeClient } from '../lib/downloadManager.js'
 import { requireAuth } from '../middleware/auth.js'
+import { parseSize } from '../lib/parseSize.js'
+import dns from 'dns'
+import ipaddr from 'ipaddr.js'
+
+function safeLookup(hostname, options, callback) {
+  dns.lookup(hostname, options, (err, address, family) => {
+    if (err) return callback(err)
+    try {
+      const ip = ipaddr.parse(address)
+      const range = ip.range()
+      if (range !== 'unicast' && range !== 'ipv4Mapped') {
+        return callback(new Error(`SSRF Prevention: IP ${address} is in a restricted range (${range})`))
+      }
+      callback(null, address, family)
+    } catch (e) {
+      callback(new Error('Invalid IP address resolved'))
+    }
+  })
+}
+
+const safeHttpAgent = new http.Agent({ lookup: safeLookup })
+const safeHttpsAgent = new https.Agent({ lookup: safeLookup })
 
 
 const router = Router()
@@ -137,8 +159,9 @@ async function downloadHttp(job, url, maxRedirects = 5) {
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url)
     const protocol = parsedUrl.protocol === 'https:' ? https : http
+    const agent = parsedUrl.protocol === 'https:' ? safeHttpsAgent : safeHttpAgent
 
-    const request = protocol.get(url, { headers: { 'User-Agent': 'file-du/1.0' } }, async (response) => {
+    const request = protocol.get(url, { agent, headers: { 'User-Agent': 'file-du/1.0' } }, async (response) => {
       // Handle redirects
       if ([301, 302, 303, 307, 308].includes(response.statusCode) && response.headers.location) {
         request.destroy()
@@ -160,6 +183,13 @@ async function downloadHttp(job, url, maxRedirects = 5) {
       const destPath = path.join(UPLOADS_DIR, storedName)
 
       const total = parseInt(response.headers['content-length'] || '0', 10)
+      
+      const MAX_TOTAL_SIZE = parseSize(process.env.MAX_TOTAL_SIZE || '50GB')
+      if (getTotalSize() + total > MAX_TOTAL_SIZE) {
+        request.destroy(new Error('Storage quota exceeded (MAX_TOTAL_SIZE limit)'))
+        return reject(new Error('Storage quota exceeded'))
+      }
+
       let downloaded = 0
       let lastTime = Date.now()
       let lastBytes = 0
@@ -244,8 +274,9 @@ async function downloadToFile(url, destPath) {
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url)
     const protocol = parsedUrl.protocol === 'https:' ? https : http
+    const agent = parsedUrl.protocol === 'https:' ? safeHttpsAgent : safeHttpAgent
     const writer = createWriteStream(destPath)
-    protocol.get(url, { headers: { 'User-Agent': 'file-du/1.0' } }, response => {
+    protocol.get(url, { agent, headers: { 'User-Agent': 'file-du/1.0' } }, response => {
       response.pipe(writer)
       writer.on('finish', resolve)
       writer.on('error', reject)
@@ -267,6 +298,12 @@ async function downloadTorrent(job, magnetOrPath, isTempFile = false) {
 
   return new Promise((resolve, reject) => {
     wtClient.add(magnetOrPath, { path: torrentDir }, torrent => {
+      const MAX_TOTAL_SIZE = parseSize(process.env.MAX_TOTAL_SIZE || '50GB')
+      if (getTotalSize() + torrent.length > MAX_TOTAL_SIZE) {
+        torrent.destroy()
+        return reject(new Error('Storage quota exceeded (MAX_TOTAL_SIZE limit)'))
+      }
+
       updateJob(job.id, { total: torrent.length })
 
       torrent.on('download', () => {

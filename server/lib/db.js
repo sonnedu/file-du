@@ -42,6 +42,11 @@ export function getFile(id) {
   return readDb().files.find(f => f.id === id) || null
 }
 
+export function getTotalSize() {
+  const db = readDb()
+  return db.files.reduce((acc, f) => acc + (f.size || 0), 0)
+}
+
 export function addFile(file) {
   const db = readDb()
   db.files.push(file)

@@ -5,7 +5,7 @@ import path from 'path'
 import mimeTypes from 'mime-types'
 import { nanoid } from 'nanoid'
 import { UPLOADS_DIR } from '../lib/storage.js'
-import { addFile } from '../lib/db.js'
+import { addFile, getTotalSize } from '../lib/db.js'
 import { requireAuth } from '../middleware/auth.js'
 import { parseSize } from '../lib/parseSize.js'
 
@@ -15,6 +15,12 @@ const router = Router()
 const MAX_FILE_SIZE = parseSize(process.env.MAX_FILE_SIZE || '8GB')
 
 router.post('/', requireAuth, async (req, res) => {
+  const MAX_TOTAL_SIZE = parseSize(process.env.MAX_TOTAL_SIZE || '50GB')
+  const incomingSize = parseInt(req.headers['content-length'] || '0', 10)
+  if (getTotalSize() + incomingSize > MAX_TOTAL_SIZE) {
+    return res.status(413).json({ error: 'Storage quota exceeded (MAX_TOTAL_SIZE limit)' })
+  }
+
   const form = formidable({
     uploadDir: UPLOADS_DIR,
     maxFileSize: MAX_FILE_SIZE,
