@@ -10,6 +10,7 @@ const translations = {
       admin: '管理后台',
       theme: '切换主题',
       logout: '退出',
+      menu: '菜单',
     },
     home: {
       list: {
@@ -135,6 +136,7 @@ const translations = {
       admin: 'Admin',
       theme: 'Toggle theme',
       logout: 'Logout',
+      menu: 'Menu',
     },
     home: {
       list: {

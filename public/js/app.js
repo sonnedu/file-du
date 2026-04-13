@@ -21,6 +21,7 @@
     activeUploads: [],
     activeDownloads: [],
     adminTab: 'upload', // 'upload' | 'remote' | 'files'
+    mobileMenuOpen: false, // mobile nav menu state
   }
 
   // ─── i18n ───────────────────────────────────────────────────────────────────
@@ -44,6 +45,8 @@
     search: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
     sun: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
     moon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
+    menu: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`,
+    close: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
     alert: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
     inbox: `<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`,
     fileX: `<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9.5" y1="12.5" x2="14.5" y2="17.5"/><line x1="14.5" y1="12.5" x2="9.5" y2="17.5"/></svg>`,
@@ -135,34 +138,89 @@
     state.theme = state.theme === 'dark' ? 'light' : 'dark'
     localStorage.setItem(THEME_KEY, state.theme)
     applyTheme()
+    closeMobileMenu()
     renderNav()
   }
   function toggleLang() {
     state.lang = state.lang === 'zh' ? 'en' : 'zh'
     localStorage.setItem(LANG_KEY, state.lang)
     applyTheme()
+    closeMobileMenu()
     renderNav()
     route()
+  }
+  function toggleMobileMenu() {
+    state.mobileMenuOpen = !state.mobileMenuOpen
+    renderNav()
+  }
+  function closeMobileMenu() {
+    if (state.mobileMenuOpen) {
+      state.mobileMenuOpen = false
+      renderNav()
+    }
   }
 
   // ─── Navbar ──────────────────────────────────────────────────────────────────
   function renderNav() {
     const cur = location.pathname
-    document.getElementById('navbar').innerHTML = `
+    const navbar = document.getElementById('navbar')
+    const isMobile = window.innerWidth <= 768
+
+    navbar.innerHTML = `
       <div class="nav-container">
-        <a href="/" class="nav-logo" onclick="event.preventDefault();navigate('/')">
+        <a href="/" class="nav-logo" onclick="event.preventDefault();navigate('/');closeMobileMenu()">
           ${ico.logoMark}<span>File-Du</span>
         </a>
-        <div class="nav-links">
+        <div class="nav-links desktop-nav">
           <a href="/" class="nav-link${cur === '/' ? ' active' : ''}" onclick="event.preventDefault();navigate('/')">${t('nav.home')}</a>
           <a href="/admin" class="nav-link${cur === '/admin' ? ' active' : ''}" onclick="event.preventDefault();navigate('/admin')">
             ${ico.lockSm} ${t('nav.admin')}
           </a>
         </div>
-        <div class="nav-actions">
+        <div class="nav-actions desktop-nav">
           <button class="icon-btn" onclick="toggleTheme()" title="${t('nav.theme')}">${state.theme === 'dark' ? ico.sun : ico.moon}</button>
           <button class="icon-btn lang-btn" onclick="toggleLang()">${state.lang === 'zh' ? 'EN' : '中'}</button>
           ${state.authenticated ? `<button class="nav-link" onclick="logout()" style="gap:.3rem">${ico.logout} ${t('nav.logout')}</button>` : ''}
+        </div>
+        <button class="hamburger-btn mobile-nav" onclick="toggleMobileMenu()" aria-label="Menu">
+          ${state.mobileMenuOpen ? ico.close : ico.menu}
+        </button>
+      </div>
+      ${isMobile && state.mobileMenuOpen ? renderMobileMenu(cur) : ''}`
+  }
+
+  function renderMobileMenu(cur) {
+    return `
+      <div class="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
+      <div class="mobile-menu">
+        <div class="mobile-menu-section">
+          <a href="/" class="mobile-menu-item${cur === '/' ? ' active' : ''}" onclick="event.preventDefault();navigate('/');closeMobileMenu()">
+            ${t('nav.home')}
+          </a>
+          <a href="/admin" class="mobile-menu-item${cur === '/admin' ? ' active' : ''}" onclick="event.preventDefault();navigate('/admin');closeMobileMenu()">
+            ${ico.lockSm} ${t('nav.admin')}
+          </a>
+        </div>
+        <div class="mobile-menu-divider"></div>
+        <div class="mobile-menu-section mobile-menu-utilities">
+          <button class="mobile-menu-item mobile-menu-action" onclick="toggleTheme()">
+            <span class="mobile-menu-icon">${state.theme === 'dark' ? ico.sun : ico.moon}</span>
+            <span>${t('nav.theme')}</span>
+          </button>
+          <button class="mobile-menu-item mobile-menu-action" onclick="toggleLang()">
+            <span class="mobile-menu-icon">${state.lang === 'zh' ? 'EN' : '中'}</span>
+            <span>${state.lang === 'zh' ? 'English' : '中文'}</span>
+          </button>
+          ${
+            state.authenticated
+              ? `
+            <button class="mobile-menu-item mobile-menu-action mobile-menu-logout" onclick="logout()">
+              <span class="mobile-menu-icon">${ico.logout}</span>
+              <span>${t('nav.logout')}</span>
+            </button>
+          `
+              : ''
+          }
         </div>
       </div>`
   }
@@ -170,6 +228,7 @@
   // ─── Router ──────────────────────────────────────────────────────────────────
   function navigate(path) {
     history.pushState({}, '', path)
+    closeMobileMenu()
     route()
   }
 
@@ -228,6 +287,7 @@
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
     state.authenticated = false
+    closeMobileMenu()
     renderNav()
     navigate('/')
   }
@@ -358,15 +418,26 @@
       return
     }
 
-    // ── Logged in: show 3-tab admin ──
+    // Logged in: show 3-tab admin
     content.innerHTML = `
       <div class="container">
         <div class="page-header" style="margin-top:2rem">
           <h1 class="page-title">${t('admin.title')}</h1>
-          <button class="btn-outline" onclick="logout()" style="gap:.4rem">${ico.logout} ${t('nav.logout')}</button>
+          <button class="btn-outline desktop-nav" onclick="logout()" style="gap:.4rem">${ico.logout} ${t('nav.logout')}</button>
         </div>
-        <div class="card transfer-card">
-          <div class="tab-bar">
+        <div class="mobile-admin-tabs mobile-nav">
+          <button class="mobile-tab${state.adminTab === 'upload' ? ' active' : ''}" onclick="switchAdminTab('upload')">
+            ${ico.uploadSm} ${t('home.tabs.upload')}
+          </button>
+          <button class="mobile-tab${state.adminTab === 'remote' ? ' active' : ''}" onclick="switchAdminTab('remote')">
+            ${ico.remote} ${t('home.tabs.remote')}
+          </button>
+          <button class="mobile-tab${state.adminTab === 'files' ? ' active' : ''}" onclick="switchAdminTab('files')">
+            ${ico.files} ${t('admin.tabs.files')}
+          </button>
+        </div>
+        <div class="card transfer-card admin-panel-card">
+          <div class="tab-bar desktop-nav">
             <button class="tab${state.adminTab === 'upload' ? ' active' : ''}" id="atab-upload" onclick="switchAdminTab('upload')">
               ${ico.uploadSm} ${t('home.tabs.upload')}
             </button>
@@ -397,7 +468,17 @@
     state.adminTab = tab
     document.querySelectorAll('.tab-bar .tab').forEach(b => b.classList.remove('active'))
     document.getElementById(`atab-${tab}`)?.classList.add('active')
-    document.getElementById('admin-tab-content').innerHTML = renderAdminTabContent()
+    document.querySelectorAll('.mobile-tab').forEach(b => b.classList.remove('active'))
+    document.querySelectorAll(`.mobile-tab`).forEach(b => {
+      if (b.textContent.includes(t('home.tabs.upload')) && tab === 'upload')
+        b.classList.add('active')
+      if (b.textContent.includes(t('home.tabs.remote')) && tab === 'remote')
+        b.classList.add('active')
+      if (b.textContent.includes(t('admin.tabs.files')) && tab === 'files')
+        b.classList.add('active')
+    })
+    const desktopContent = document.getElementById('admin-tab-content')
+    if (desktopContent) desktopContent.innerHTML = renderAdminTabContent()
     initAdminTab()
   }
 
@@ -958,6 +1039,8 @@
     navigate,
     toggleTheme,
     toggleLang,
+    toggleMobileMenu,
+    closeMobileMenu,
     logout,
     submitLogin,
     switchAdminTab,
@@ -984,6 +1067,13 @@
     route()
 
     window.addEventListener('popstate', route)
+    window.addEventListener('resize', () => {
+      if (!document.getElementById('navbar')) return
+      if (window.innerWidth > 768 && state.mobileMenuOpen) {
+        state.mobileMenuOpen = false
+      }
+      renderNav()
+    })
     document.getElementById('modal-overlay').addEventListener('click', e => {
       if (e.target.id === 'modal-overlay') closeModal()
     })
