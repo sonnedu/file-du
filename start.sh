@@ -7,6 +7,9 @@ set -e
 
 export $(grep -v '^#' .env | xargs)
 
+echo "[→] 检查并安装/更新项目依赖（避免遗漏依赖导致启动失败）..."
+npm install --no-fund --no-audit || echo "[!] npm install 发生警告，将继续尝试启动..."
+
 mkdir -p data/uploads data/temp logs
 
 if command -v pm2 &>/dev/null; then
