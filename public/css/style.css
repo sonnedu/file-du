@@ -1424,32 +1424,38 @@ a:hover {
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
-  .nav-container {
-    padding: 0 1rem;
-    gap: 0.75rem;
+  .nav-container { padding: 0 1rem; }
+  .nav-link { padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+  .container { padding: 1.5rem 1rem 3rem; }
+  .hero { padding: 2.5rem 1rem 1.5rem; }
+  .tab-content { padding: 1.5rem 1rem; }
+  .upload-zone { padding: 2rem 1rem; }
+  .upload-text::after { content: ''; }
+  .input-group { flex-direction: column; }
+  .url-input { padding-right: 1rem; }
+  .url-type-badge { display: none; }
+  .share-meta { grid-template-columns: 1fr; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .file-actions { gap: 0.25rem; }
+  .sort-options { flex-wrap: wrap; }
+  .modal { max-width: 100%; }
+  .toast { max-width: calc(100vw - 2rem); }
+}
+
+/* 移动端优化拖拽文案 */
+@media (max-width: 640px) {
+  .upload-text {
+    font-size: 0.95rem;
   }
-  .nav-links {
-    gap: 0;
+}
+
+@media (pointer: coarse) {
+  /* 触屏设备优化 */
+  .upload-zone {
+    border-style: solid;
+    border-width: 2px;
   }
-  .nav-link {
-    padding: 0.35rem 0.5rem;
-    font-size: 0.8rem;
-  }
-  .nav-link svg {
-    width: 12px;
-    height: 12px;
-  }
-  .nav-actions {
-    gap: 0.35rem;
-  }
-  .icon-btn {
-    width: 32px;
-    height: 32px;
-  }
-  .lang-btn {
-    padding: 0 0.6rem;
-    font-size: 0.75rem;
-  }
+}
   .container {
     padding: 1.5rem 1rem 3rem;
   }
@@ -1461,9 +1467,6 @@ a:hover {
   }
   .upload-zone {
     padding: 2rem 1rem;
-  }
-  .upload-text::after {
-    content: '';
   }
   .input-group {
     flex-direction: column;
@@ -1493,19 +1496,5 @@ a:hover {
   }
   .toast {
     max-width: calc(100vw - 2rem);
-  }
-}
-
-@media (max-width: 480px) {
-  .nav-link {
-    padding: 0.25rem 0.4rem;
-    font-size: 0.72rem;
-  }
-}
-
-@media (pointer: coarse) {
-  .upload-zone {
-    border-style: solid;
-    border-width: 2px;
   }
 }
