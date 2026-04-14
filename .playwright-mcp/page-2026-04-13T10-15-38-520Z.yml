@@ -1,0 +1,58 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - generic [ref=e37]:
+      - link "File-Du" [ref=e38] [cursor=pointer]:
+        - /url: /
+        - img [ref=e39]
+        - generic [ref=e41]: File-Du
+      - generic [ref=e42]:
+        - link "首页" [ref=e43] [cursor=pointer]:
+          - /url: /
+        - link "管理后台" [ref=e44] [cursor=pointer]:
+          - /url: /admin
+          - img [ref=e45]
+          - text: 管理后台
+      - generic [ref=e48]:
+        - button "切换主题" [ref=e49] [cursor=pointer]:
+          - img [ref=e50]
+        - button "EN" [ref=e56] [cursor=pointer]
+        - button "退出" [ref=e57] [cursor=pointer]:
+          - img [ref=e58]
+          - text: 退出
+  - main [ref=e24]:
+    - generic [ref=e61]:
+      - generic [ref=e62]:
+        - heading "管理后台" [level=1] [ref=e63]
+        - button "退出" [ref=e64] [cursor=pointer]:
+          - img [ref=e65]
+          - text: 退出
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - button "上传文件" [ref=e70] [cursor=pointer]:
+            - img [ref=e71]
+            - text: 上传文件
+          - button "远程/磁力" [ref=e74] [cursor=pointer]:
+            - img [ref=e75]
+            - text: 远程/磁力
+          - button "文件管理" [active] [ref=e78] [cursor=pointer]:
+            - img [ref=e79]
+            - text: 文件管理
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - generic:
+                - img
+              - textbox "搜索文件名..." [ref=e98]
+            - generic [ref=e99]:
+              - generic [ref=e100]: 排序：
+              - combobox [ref=e101] [cursor=pointer]:
+                - option "上传时间" [selected]
+                - option "文件大小"
+                - option "文件名"
+                - option "下载次数"
+              - combobox [ref=e102] [cursor=pointer]:
+                - option "降序" [selected]
+                - option "升序"
+          - generic [ref=e104]:
+            - img [ref=e106]
+            - paragraph [ref=e109]: 暂无文件，快去上传吧！

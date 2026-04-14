@@ -1,0 +1,29 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - generic [ref=e24]:
+      - link "File-Du" [ref=e25] [cursor=pointer]:
+        - /url: /
+        - img [ref=e26]
+        - generic [ref=e28]: File-Du
+      - button "Menu" [ref=e29] [cursor=pointer]:
+        - img [ref=e30]
+  - main [ref=e11]:
+    - generic [ref=e31]:
+      - heading "管理后台" [level=1] [ref=e33]
+      - generic [ref=e34]:
+        - button "上传文件" [ref=e35] [cursor=pointer]:
+          - img [ref=e36]
+          - text: 上传文件
+        - button "远程/磁力" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+          - text: 远程/磁力
+        - button "文件管理" [ref=e43] [cursor=pointer]:
+          - img [ref=e44]
+          - text: 文件管理
+      - generic [ref=e49] [cursor=pointer]:
+        - generic:
+          - generic:
+            - img
+          - paragraph: 拖拽文件到此处，或点击选择
+          - paragraph: 支持任意格式 · 单文件最大 8GB
+          - button "选择文件" [ref=e50]

@@ -14,10 +14,20 @@ const MAX_FILE_SIZE = parseSize(process.env.MAX_FILE_SIZE || '8GB')
 
 router.post('/', requireAuth, async (req, res) => {
   const MAX_TOTAL_SIZE = parseSize(process.env.MAX_TOTAL_SIZE || '50GB')
+  const initialTotalSize = await getTotalSize()
   const incomingSize = parseInt(req.headers['content-length'] || '0', 10)
-  if ((await getTotalSize()) + incomingSize > MAX_TOTAL_SIZE) {
+
+  if (initialTotalSize + incomingSize > MAX_TOTAL_SIZE) {
     return res.status(413).json({ error: 'Storage quota exceeded (MAX_TOTAL_SIZE limit)' })
   }
+
+  let uploadedBytes = 0
+  req.on('data', chunk => {
+    uploadedBytes += chunk.length
+    if (initialTotalSize + uploadedBytes > MAX_TOTAL_SIZE) {
+      req.destroy(new Error('Storage quota exceeded dynamically'))
+    }
+  })
 
   const form = formidable({
     uploadDir: UPLOADS_DIR,
@@ -60,6 +70,9 @@ router.post('/', requireAuth, async (req, res) => {
     res.json({ success: true, files: results })
   } catch (err) {
     console.error('[Upload Error]', err)
+    if (err.message && err.message.includes('Storage quota')) {
+      return res.status(413).json({ error: 'Storage quota exceeded' })
+    }
     res.status(500).json({ error: err.message })
   }
 })

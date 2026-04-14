@@ -1,0 +1,39 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - generic [ref=e4]:
+      - link "File-Du" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img [ref=e6]
+        - generic [ref=e8]: File-Du
+      - generic [ref=e9]:
+        - link "首页" [ref=e10] [cursor=pointer]:
+          - /url: /
+        - link "管理后台" [ref=e11] [cursor=pointer]:
+          - /url: /admin
+          - img [ref=e12]
+          - text: 管理后台
+      - generic [ref=e15]:
+        - button "切换主题" [ref=e16] [cursor=pointer]:
+          - img [ref=e17]
+        - button "EN" [ref=e23] [cursor=pointer]
+  - main [ref=e24]:
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - heading "文件下载" [level=1] [ref=e28]
+          - paragraph [ref=e29]: 点击下方文件即可下载，无需登录
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic:
+              - img
+            - textbox "搜索文件名..." [ref=e32]
+          - generic [ref=e33]:
+            - combobox [ref=e34] [cursor=pointer]:
+              - option "上传时间" [selected]
+              - option "文件大小"
+              - option "文件名"
+              - option "下载次数"
+            - combobox [ref=e35] [cursor=pointer]:
+              - option "降序" [selected]
+              - option "升序"
+      - generic [ref=e37]: Failed to fetch
